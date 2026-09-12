@@ -57,6 +57,14 @@ export class GeminiProvider implements AIProvider {
   }
 
   async generateResponse(messages: ChatMessage[], options?: GenerateOptions): Promise<AIResponse> {
+    if (!this.apiKey) {
+      return {
+        text: '🌙 <i>Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>AI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).</i> [EMOTION:idle]',
+        cleanText: '🌙 Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>AI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).',
+        detectedEmotion: 'idle',
+      };
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
     const contents: any[] = [];
 

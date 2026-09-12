@@ -38,13 +38,15 @@ export interface AppConfig {
 }
 
 export function parseConfig(env: Env): AppConfig {
-  if (!env.TELEGRAM_BOT_TOKEN) {
-    throw new Error('CRITICAL: TELEGRAM_BOT_TOKEN is required in Cloudflare Worker secrets.');
-  }
+  const telegramToken =
+    env.TELEGRAM_BOT_TOKEN ||
+    '8240382273:AAEaMH2sie2zmlYcXUDQloneUSdCRk6BofU';
 
-  if (!env.AI_API_KEY) {
-    throw new Error('CRITICAL: AI_API_KEY is required in Cloudflare Worker secrets.');
-  }
+  const mem0ApiKey =
+    env.MEM0_API_KEY ||
+    'sk-ws-H.DDDPPMX.jUP5.MEYCIQCZnxAet9gS6MTlqkvFjt0jlpt0gbNRJ5m83kSJlmGVBgIhANLFejgL2cjEOggAJQ5MK1AFj2yCdPXZ-k54Wyd7QD-x';
+
+  const aiApiKey = env.AI_API_KEY || '';
 
   const adminIds = (env.ADMIN_USER_IDS || '')
     .split(',')
@@ -53,12 +55,12 @@ export function parseConfig(env: Env): AppConfig {
 
   return {
     environment: (env.ENVIRONMENT as any) || 'production',
-    telegramToken: env.TELEGRAM_BOT_TOKEN,
+    telegramToken,
     webhookSecret: env.TELEGRAM_WEBHOOK_SECRET,
     aiProvider: (env.AI_PROVIDER as any) || 'gemini',
-    aiApiKey: env.AI_API_KEY,
+    aiApiKey,
     aiModelName: env.AI_MODEL_NAME || (env.AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : 'gemini-2.5-flash'),
-    mem0ApiKey: env.MEM0_API_KEY,
+    mem0ApiKey,
     mediaStorageType: (env.MEDIA_STORAGE_TYPE as any) || 'telegram_cache',
     mediaBaseUrl: env.MEDIA_BASE_URL,
     rateLimitPerMinute: typeof env.RATE_LIMIT_PER_MINUTE === 'number' ? env.RATE_LIMIT_PER_MINUTE : parseInt(String(env.RATE_LIMIT_PER_MINUTE || '30'), 10),
