@@ -1,0 +1,128 @@
+import { AIProviderError } from '../../utils/errors';
+import { Logger } from '../../utils/logger';
+import { LunaEmotion } from '../../media/types';
+import { AIProvider, AIResponse, ChatMessage, GenerateOptions } from './types';
+
+export class GeminiProvider implements AIProvider {
+  public readonly providerName = 'gemini';
+  public readonly modelName: string;
+
+  constructor(
+    private readonly apiKey: string,
+    modelName: string = 'gemini-2.5-flash'
+  ) {
+    this.modelName = modelName;
+  }
+
+  private parseOutput(rawText: string): {
+    cleanText: string;
+    innerThought?: string;
+    emotion: LunaEmotion;
+  } {
+    let workingText = rawText;
+    let innerThought: string | undefined;
+
+    // 1. Extract <thought>...</thought> (Soul-of-Waifu inner monologue)
+    const thoughtMatch = workingText.match(/<thought>([\s\S]*?)<\/thought>/i);
+    if (thoughtMatch) {
+      innerThought = thoughtMatch[1].trim();
+      workingText = workingText.replace(thoughtMatch[0], '').trim();
+    }
+
+    // 2. Extract [EMOTION:...]
+    const emotionMatch = workingText.match(/\[EMOTION:\s*(idle|happy|sad|angry|sleepy|love|confused|surprised)\s*\]/i);
+    let emotion: LunaEmotion = 'idle';
+
+    if (emotionMatch) {
+      emotion = emotionMatch[1].toLowerCase() as LunaEmotion;
+      workingText = workingText.replace(emotionMatch[0], '').trim();
+    } else {
+      const lower = workingText.toLowerCase();
+      if (lower.includes('дякую') || lower.includes('рада') || lower.includes('чудово') || lower.includes('✨')) {
+        emotion = 'happy';
+      } else if (lower.includes('сумн') || lower.includes('шкода') || lower.includes('жаль')) {
+        emotion = 'sad';
+      } else if (lower.includes('люблю') || lower.includes('серденько') || lower.includes('💜') || lower.includes('обійма')) {
+        emotion = 'love';
+      } else if (lower.includes('спати') || lower.includes('ніч') || lower.includes('втомил')) {
+        emotion = 'sleepy';
+      }
+    }
+
+    return {
+      cleanText: workingText,
+      innerThought,
+      emotion,
+    };
+  }
+
+  async generateResponse(messages: ChatMessage[], options?: GenerateOptions): Promise<AIResponse> {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
+    const contents: any[] = [];
+
+    const systemInstruction = options?.systemInstruction
+      ? { parts: [{ text: options.systemInstruction }] }
+      : undefined;
+
+    for (const msg of messages) {
+      if (msg.role === 'system') continue;
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      });
+    }
+
+    const payload: any = {
+      contents,
+      generationConfig: {
+        temperature: options?.temperature ?? 0.8,
+        maxOutputTokens: options?.maxTokens ?? 900,
+      },
+    };
+
+    if (systemInstruction) {
+      payload.systemInstruction = systemInstruction;
+    }
+
+    const startTime = Date.now();
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        Logger.error(`Gemini API error (status ${res.status})`, new Error(errText));
+        throw new AIProviderError(`Gemini API returned status ${res.status}`);
+      }
+
+      const data: any = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!rawText) {
+        throw new AIProviderError('Empty text received from Gemini');
+      }
+
+      const { cleanText, innerThought, emotion } = this.parseOutput(rawText);
+
+      Logger.info(`Gemini response generated in ${Date.now() - startTime}ms [Emotion: ${emotion}, Thought: ${!!innerThought}]`);
+
+      return {
+        text: rawText,
+        cleanText,
+        innerThought,
+        detectedEmotion: emotion,
+        usage: {
+          promptTokens: data?.usageMetadata?.promptTokenCount,
+          completionTokens: data?.usageMetadata?.candidatesTokenCount,
+        },
+      };
+    } catch (err) {
+      if (err instanceof AIProviderError) throw err;
+      Logger.error('Gemini API fetch error', err);
+      throw new AIProviderError(`Failed to call Gemini API: ${String(err)}`);
+    }
+  }
+}

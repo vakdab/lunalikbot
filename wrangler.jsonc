@@ -1,0 +1,48 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lunalikbot",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "AI_PROVIDER": "gemini",
+    "AI_MODEL_NAME": "gemini-2.5-flash",
+    "MEDIA_STORAGE_TYPE": "telegram_cache",
+    "RATE_LIMIT_PER_MINUTE": 30
+  },
+  "kv_namespaces": [
+    {
+      "binding": "LUNA_KV",
+      "id": "YOUR_KV_NAMESPACE_ID",
+      "preview_id": "YOUR_PREVIEW_KV_ID"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "luna_db",
+      "database_id": "YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "luna-media-assets"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROULETTE_HUB",
+        "class_name": "RouletteHubDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["RouletteHubDO"]
+    }
+  ]
+}

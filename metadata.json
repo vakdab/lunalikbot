@@ -1,0 +1,6 @@
+{
+  "name": "Luna Telegram AI Companion",
+  "description": "Modular Cloudflare Workers Telegram bot featuring Luna AI companion, Mem0 long-term memory, and anonymous chat roulette.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

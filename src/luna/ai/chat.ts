@@ -1,0 +1,65 @@
+import { assembleSystemPrompt } from '../prompt/system';
+import { UserProfile } from '../../database/types';
+import { SoulCompanionState } from '../soul';
+import { AIProvider, AIResponse } from './types';
+import { Logger } from '../../utils/logger';
+
+export interface LunaConversationContext {
+  user: UserProfile;
+  userMessage: string;
+  soulState?: SoulCompanionState;
+  relevantMemories?: string[];
+  recentHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+}
+
+export class LunaChatService {
+  constructor(private readonly provider: AIProvider) {}
+
+  async respond(context: LunaConversationContext): Promise<AIResponse> {
+    const { user, userMessage, soulState, relevantMemories, recentHistory = [] } = context;
+
+    // 1. Time in Kyiv
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('uk-UA', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Kyiv',
+    });
+    const hour = parseInt(timeString.split(':')[0], 10);
+    const greeting = hour >= 23 || hour < 5 ? 'Глибока ніч (час тиші)' : hour < 12 ? 'Ранок' : hour < 18 ? 'День' : 'Затишний вечір';
+
+    // 2. Assemble system prompt with Soul-of-Waifu & Mem0 context
+    const systemPrompt = assembleSystemPrompt({
+      user,
+      soulState,
+      relevantMemories,
+      currentTimeString: timeString,
+      timeOfDayGreeting: greeting,
+    });
+
+    // 3. Messages array
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+    for (const item of recentHistory.slice(-4)) {
+      messages.push({
+        role: item.role,
+        content: item.content,
+      });
+    }
+
+    messages.push({
+      role: 'user',
+      content: userMessage,
+    });
+
+    Logger.info(`Soul-of-Waifu conversation step for user ${user.id} (Intimacy: Tier ${soulState?.intimacyTier || 1})`);
+
+    const response = await this.provider.generateResponse(messages, {
+      systemInstruction: systemPrompt,
+      temperature: 0.8,
+      maxTokens: 800,
+    });
+
+    return response;
+  }
+}
