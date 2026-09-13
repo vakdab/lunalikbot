@@ -9,6 +9,12 @@
   "triggers": {
     "crons": ["*/15 * * * *"]
   },
+  "kv_namespaces": [
+    {
+      "binding": "LUNA_KV",
+      "id": "e895b4efdc7941c5915ca6af83879f96"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "groq",
