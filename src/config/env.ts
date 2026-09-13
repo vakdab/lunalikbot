@@ -9,7 +9,7 @@ export interface Env {
 
   // Environment Variables
   ENVIRONMENT?: string;
-  AI_PROVIDER?: string; // 'gemini' | 'openai' | 'custom'
+  AI_PROVIDER?: string; // 'gemini' | 'openai' | 'groq'
   AI_MODEL_NAME?: string;
   MEDIA_STORAGE_TYPE?: string; // 'telegram_cache' | 'r2' | 'cdn'
   MEDIA_BASE_URL?: string;
@@ -27,7 +27,7 @@ export interface AppConfig {
   environment: 'development' | 'production' | 'test';
   telegramToken: string;
   webhookSecret?: string;
-  aiProvider: 'gemini' | 'openai' | 'custom';
+  aiProvider: 'gemini' | 'openai' | 'groq';
   aiApiKey: string;
   aiModelName: string;
   mem0ApiKey?: string;
@@ -53,7 +53,13 @@ export function parseConfig(env: Env): AppConfig {
     webhookSecret: env.TELEGRAM_WEBHOOK_SECRET,
     aiProvider: (env.AI_PROVIDER as any) || 'gemini',
     aiApiKey,
-    aiModelName: env.AI_MODEL_NAME || (env.AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : 'gemini-2.5-flash'),
+    aiModelName:
+      env.AI_MODEL_NAME ||
+      (env.AI_PROVIDER === 'openai'
+        ? 'gpt-4o-mini'
+        : env.AI_PROVIDER === 'groq'
+          ? 'llama-3.3-70b-versatile'
+          : 'gemini-2.5-flash'),
     mem0ApiKey,
     mediaStorageType: (env.MEDIA_STORAGE_TYPE as any) || 'telegram_cache',
     mediaBaseUrl: env.MEDIA_BASE_URL,

@@ -1,5 +1,6 @@
 import { GeminiProvider } from './gemini';
 import { OpenAIProvider } from './openai';
+import { GroqProvider } from './groq';
 import { AIProvider } from './types';
 import { AppConfig } from '../../config/env';
 
@@ -8,6 +9,8 @@ export class AIProviderFactory {
     switch (config.aiProvider) {
       case 'openai':
         return new OpenAIProvider(config.aiApiKey, config.aiModelName);
+      case 'groq':
+        return new GroqProvider(config.aiApiKey, config.aiModelName);
       case 'gemini':
       default:
         return new GeminiProvider(config.aiApiKey, config.aiModelName);

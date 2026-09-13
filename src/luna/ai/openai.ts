@@ -4,7 +4,7 @@ import { LunaEmotion } from '../../media/types';
 import { AIProvider, AIResponse, ChatMessage, GenerateOptions } from './types';
 
 export class OpenAIProvider implements AIProvider {
-  public readonly providerName = 'openai';
+  public readonly providerName: string = 'openai';
   public readonly modelName: string;
 
   constructor(
