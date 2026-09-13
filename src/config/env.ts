@@ -38,14 +38,8 @@ export interface AppConfig {
 }
 
 export function parseConfig(env: Env): AppConfig {
-  const telegramToken =
-    env.TELEGRAM_BOT_TOKEN ||
-    '8240382273:AAEaMH2sie2zmlYcXUDQloneUSdCRk6BofU';
-
-  const mem0ApiKey =
-    env.MEM0_API_KEY ||
-    'sk-ws-H.DDDPPMX.jUP5.MEYCIQCZnxAet9gS6MTlqkvFjt0jlpt0gbNRJ5m83kSJlmGVBgIhANLFejgL2cjEOggAJQ5MK1AFj2yCdPXZ-k54Wyd7QD-x';
-
+  const telegramToken = env.TELEGRAM_BOT_TOKEN || '';
+  const mem0ApiKey = env.MEM0_API_KEY;
   const aiApiKey = env.AI_API_KEY || '';
 
   const adminIds = (env.ADMIN_USER_IDS || '')
