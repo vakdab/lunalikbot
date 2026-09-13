@@ -67,7 +67,7 @@ export default {
 
       // The bot has one purpose: conversation. /start is just a clean greeting;
       // every other text message goes through the same chat + memory pipeline.
-      if (message.text?.trim() === '/start') {
+      if (/^\/start(?:@\w+)?$/i.test(message.text?.trim() || '')) {
         await telegram.sendPhoto(
           message.chat.id,
           LUNA_WELCOME_IMAGE_URL,
