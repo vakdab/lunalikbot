@@ -139,7 +139,7 @@ export class TelegramApi {
     return this.call<boolean>('setWebhook', {
       url,
       secret_token: secretToken,
-      allowed_updates: ['message', 'edited_message', 'callback_query'],
+      allowed_updates: ['message'],
     });
   }
 }

@@ -12,21 +12,5 @@
     "AI_MODEL_NAME": "gemini-2.5-flash",
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
-  },
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "ROULETTE_HUB",
-        "class_name": "RouletteHubDO"
-      }
-    ]
-  },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": [
-        "RouletteHubDO"
-      ]
-    }
-  ]
+  }
 }

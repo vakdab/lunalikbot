@@ -1,13 +1,11 @@
 import { assembleSystemPrompt } from '../prompt/system';
 import { UserProfile } from '../../database/types';
-import { SoulCompanionState } from '../soul';
 import { AIProvider, AIResponse } from './types';
 import { Logger } from '../../utils/logger';
 
 export interface LunaConversationContext {
   user: UserProfile;
   userMessage: string;
-  soulState?: SoulCompanionState;
   relevantMemories?: string[];
   recentHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
@@ -16,7 +14,7 @@ export class LunaChatService {
   constructor(private readonly provider: AIProvider) {}
 
   async respond(context: LunaConversationContext): Promise<AIResponse> {
-    const { user, userMessage, soulState, relevantMemories, recentHistory = [] } = context;
+    const { user, userMessage, relevantMemories, recentHistory = [] } = context;
 
     // 1. Time in Kyiv
     const now = new Date();
@@ -31,7 +29,6 @@ export class LunaChatService {
     // 2. Assemble system prompt with Soul-of-Waifu & Mem0 context
     const systemPrompt = assembleSystemPrompt({
       user,
-      soulState,
       relevantMemories,
       currentTimeString: timeString,
       timeOfDayGreeting: greeting,
@@ -52,7 +49,7 @@ export class LunaChatService {
       content: userMessage,
     });
 
-    Logger.info(`Soul-of-Waifu conversation step for user ${user.id} (Intimacy: Tier ${soulState?.intimacyTier || 1})`);
+    Logger.info(`Chat response generated for user ${user.id}`);
 
     const response = await this.provider.generateResponse(messages, {
       systemInstruction: systemPrompt,
