@@ -6,6 +6,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "groq",
