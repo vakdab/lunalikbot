@@ -25,7 +25,7 @@ export default {
     const url = new URL(request.url);
 
     // 1. Health check & diagnostic endpoint
-    if (url.pathname === '/health' || url.pathname === '/') {
+    if (request.method === 'GET' && (url.pathname === '/health' || url.pathname === '/')) {
       return new Response(
         JSON.stringify({
           status: 'ok',
@@ -35,7 +35,7 @@ export default {
           timestamp: new Date().toISOString(),
         }),
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
           status: 200,
         }
       );
