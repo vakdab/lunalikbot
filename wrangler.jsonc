@@ -3,7 +3,9 @@
   "name": "lunalikbot",
   "main": "src/index.ts",
   "compatibility_date": "2024-11-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "gemini",
@@ -22,7 +24,9 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["RouletteHubDO"]
+      "new_sqlite_classes": [
+        "RouletteHubDO"
+      ]
     }
   ]
 }
