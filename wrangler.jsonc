@@ -11,26 +11,6 @@
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
   },
-  "kv_namespaces": [
-    {
-      "binding": "LUNA_KV",
-      "id": "YOUR_KV_NAMESPACE_ID",
-      "preview_id": "YOUR_PREVIEW_KV_ID"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "luna_db",
-      "database_id": "YOUR_D1_DATABASE_ID"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA_BUCKET",
-      "bucket_name": "luna-media-assets"
-    }
-  ],
   "durable_objects": {
     "bindings": [
       {
