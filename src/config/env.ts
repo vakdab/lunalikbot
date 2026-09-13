@@ -58,7 +58,7 @@ export function parseConfig(env: Env): AppConfig {
       (env.AI_PROVIDER === 'openai'
         ? 'gpt-4o-mini'
         : env.AI_PROVIDER === 'groq'
-          ? 'llama-3.3-70b-versatile'
+          ? 'openai/gpt-oss-120b'
           : 'gemini-2.5-flash'),
     mem0ApiKey,
     mediaStorageType: (env.MEDIA_STORAGE_TYPE as any) || 'telegram_cache',

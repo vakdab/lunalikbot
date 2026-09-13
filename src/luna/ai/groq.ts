@@ -8,7 +8,7 @@ import { OpenAIProvider } from './openai';
 export class GroqProvider extends OpenAIProvider {
   public override readonly providerName = 'groq';
 
-  constructor(apiKey: string, modelName: string = 'llama-3.3-70b-versatile') {
+  constructor(apiKey: string, modelName: string = 'openai/gpt-oss-120b') {
     super(apiKey, modelName, 'https://api.groq.com/openai/v1');
   }
 }

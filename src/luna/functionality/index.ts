@@ -6,6 +6,7 @@ import { MemoryService } from '../memory';
 import { AIProvider } from '../ai/types';
 import { LunaChatService } from '../ai/chat';
 import { Logger } from '../../utils/logger';
+import { AppError } from '../../utils/errors';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -50,7 +51,11 @@ export class LunaCompanion {
       );
     } catch (err) {
       Logger.error('Chat response failed', err);
-      await this.telegram.sendMessage(message.chat.id, 'Я не змогла відповісти зараз. Напиши ще раз трохи пізніше.');
+      const diagnostic = err instanceof AppError ? `\n\nДеталі: ${err.message.slice(0, 300)}` : '';
+      await this.telegram.sendMessage(
+        message.chat.id,
+        `Я не змогла відповісти зараз. Напиши ще раз трохи пізніше.${diagnostic}`
+      );
     }
   }
 }
