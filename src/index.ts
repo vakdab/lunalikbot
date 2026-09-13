@@ -11,6 +11,28 @@ import { LunaCompanion } from './luna/functionality';
 import { validateTelegramSecret } from './utils/validation';
 import { Logger } from './utils/logger';
 
+const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
+const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
+
+Від сьогодні я твоя компаньйонка.
+
+Що я вмію:
+
+1. Психолог
+2. Подруга
+3. Співрозмовниця
+4. Писати першою
+5. Допомагати з навчанням
+6. Нагадувати, що треба зробити
+7. Допомагати з вибором: що вдягнути, що подивитись, що купити
+8. Виконувати твої прохання та завдання у потрібний час
+
+Додай мене у свою групу — я зможу модерувати чат, допомагати учасникам і робити чат цікавішим.
+
+Я буду поруч, вислухаю тебе, допоможу та підтримаю.
+
+Пиши в чат будь-яке повідомлення на будь-яку тему — я відповім тобі та поспілкуюся з тобою 24/7.`;
+
 export default {
   async fetch(request: Request, env: Env, executionCtx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -46,9 +68,10 @@ export default {
       // The bot has one purpose: conversation. /start is just a clean greeting;
       // every other text message goes through the same chat + memory pipeline.
       if (message.text?.trim() === '/start') {
-        await telegram.sendMessage(
+        await telegram.sendPhoto(
           message.chat.id,
-          `Привіт, ${message.from.first_name || 'друже'}! Я Луна. Просто напиши мені щось — я відповім і поступово запам’ятаю важливе про тебе.`
+          LUNA_WELCOME_IMAGE_URL,
+          { caption: LUNA_WELCOME_CAPTION, parse_mode: 'HTML' }
         );
       } else if (message.text) {
         const appCtx: AppContext = { env, config, executionCtx };
