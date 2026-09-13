@@ -2,9 +2,9 @@ import { KVStorage } from '../../database/kv';
 import { Logger } from '../../utils/logger';
 import { Mem0MemoryItem, Mem0SearchOptions } from './types';
 
-export class MemoryRetriever {
-  private readonly baseUrl = 'https://api.mem0.ai/v1';
+const MEM0_V3_URL = 'https://api.mem0.ai/v3';
 
+export class MemoryRetriever {
   constructor(
     private readonly apiKey?: string,
     private readonly kv?: KVStorage,
@@ -13,42 +13,43 @@ export class MemoryRetriever {
   ) {}
 
   private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
+    return {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       Authorization: `Token ${this.apiKey}`,
     };
-    if (this.orgId) headers['X-Org-Id'] = this.orgId;
-    if (this.projectId) headers['X-Project-Id'] = this.projectId;
-    return headers;
   }
 
   async searchRelevant(options: Mem0SearchOptions): Promise<string[]> {
-    const { query, userId, agentId = 'luna', limit = 5 } = options;
+    const { query, userId, agentId = 'luna', limit = 5, threshold } = options;
 
-    if (!this.apiKey) {
-      return this.searchKVFallback(userId, query);
-    }
+    if (!this.apiKey) return this.searchKVFallback(userId, query);
 
     try {
-      const response = await fetch(`${this.baseUrl}/memories/search/`, {
+      const response = await fetch(`${MEM0_V3_URL}/memories/search/`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
           query,
-          user_id: String(userId),
-          agent_id: agentId,
-          top_k: limit,
+          // V3 requires entity IDs inside filters, not at the top level.
+          filters: {
+            AND: [{ user_id: String(userId) }, { agent_id: agentId }],
+          },
+          top_k: Math.max(1, Math.min(limit, 1000)),
+          ...(threshold === undefined ? {} : { threshold }),
         }),
       });
 
       if (!response.ok) {
-        Logger.warn(`Mem0 search returned status ${response.status}`);
+        Logger.warn(`Mem0 V3 search returned status ${response.status}: ${await response.text()}`);
         return this.searchKVFallback(userId, query);
       }
 
-      const data: any = await response.json();
-      const results: any[] = Array.isArray(data) ? data : data.results || [];
-      return results.map((r) => r.memory || r.text).filter(Boolean);
+      const data = (await response.json()) as { results?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+      const results = Array.isArray(data) ? data : data.results || [];
+      return results
+        .map((item) => item.memory || item.text)
+        .filter((memory): memory is string => typeof memory === 'string' && memory.length > 0);
     } catch (err) {
       Logger.error('Failed to search Mem0 memories', err);
       return this.searchKVFallback(userId, query);
@@ -58,34 +59,42 @@ export class MemoryRetriever {
   async getAllUserMemories(userId: number | string, agentId: string = 'luna'): Promise<Mem0MemoryItem[]> {
     if (!this.apiKey) {
       const kvList = (await this.kv?.get<string[]>(`memories:${userId}`)) || [];
-      return kvList.map((m, i) => ({
-        id: `kv-${i}`,
-        memory: m,
+      return kvList.map((memory, index) => ({
+        id: `kv-${index}`,
+        memory,
         user_id: String(userId),
         agent_id: agentId,
       }));
     }
 
     try {
-      const response = await fetch(
-        `${this.baseUrl}/memories/?user_id=${userId}&agent_id=${agentId}`,
-        {
-          headers: this.getHeaders(),
-        }
-      );
+      // V3 get-all is POST with a filter body and a paginated response envelope.
+      const response = await fetch(`${MEM0_V3_URL}/memories/?page=1&page_size=200`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          filters: {
+            AND: [{ user_id: String(userId) }, { agent_id: agentId }],
+          },
+        }),
+      });
 
-      if (!response.ok) return [];
-      const data: any = await response.json();
-      const rawList: any[] = Array.isArray(data) ? data : data.results || [];
+      if (!response.ok) {
+        Logger.warn(`Mem0 V3 get memories returned status ${response.status}: ${await response.text()}`);
+        return [];
+      }
+
+      const data = (await response.json()) as { results?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+      const rawList = Array.isArray(data) ? data : data.results || [];
       return rawList.map((item) => ({
-        id: item.id || String(Math.random()),
-        memory: item.memory || item.text,
-        user_id: item.user_id || String(userId),
-        agent_id: item.agent_id || agentId,
-        metadata: item.metadata,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-      }));
+        id: String(item.id || crypto.randomUUID()),
+        memory: String(item.memory || item.text || ''),
+        user_id: String(item.user_id || userId),
+        agent_id: String(item.agent_id || agentId),
+        metadata: item.metadata as Mem0MemoryItem['metadata'],
+        created_at: item.created_at as string | undefined,
+        updated_at: item.updated_at as string | undefined,
+      })).filter((item) => item.memory.length > 0);
     } catch (err) {
       Logger.error('Failed to fetch all memories from Mem0', err);
       return [];
@@ -98,8 +107,8 @@ export class MemoryRetriever {
     if (memories.length === 0) return [];
 
     const lowerQuery = query.toLowerCase();
-    const matches = memories.filter((m) =>
-      m.toLowerCase().split(' ').some((w) => w.length > 3 && lowerQuery.includes(w))
+    const matches = memories.filter((memory) =>
+      memory.toLowerCase().split(' ').some((word) => word.length > 3 && lowerQuery.includes(word))
     );
 
     return (matches.length > 0 ? matches : memories).slice(0, 5);

@@ -2,9 +2,10 @@ import { KVStorage } from '../../database/kv';
 import { Logger } from '../../utils/logger';
 import { Mem0AddOptions } from './types';
 
-export class MemorySaver {
-  private readonly baseUrl = 'https://api.mem0.ai/v1';
+const MEM0_V3_URL = 'https://api.mem0.ai/v3';
+const MEM0_V1_URL = 'https://api.mem0.ai/v1';
 
+export class MemorySaver {
   constructor(
     private readonly apiKey?: string,
     private readonly kv?: KVStorage,
@@ -13,31 +14,26 @@ export class MemorySaver {
   ) {}
 
   private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
+    return {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       Authorization: `Token ${this.apiKey}`,
     };
-    if (this.orgId) headers['X-Org-Id'] = this.orgId;
-    if (this.projectId) headers['X-Project-Id'] = this.projectId;
-    return headers;
   }
 
   async addMemory(options: Mem0AddOptions): Promise<boolean> {
     const { userId, messages, agentId = 'luna', metadata } = options;
 
-    if (!this.apiKey) {
-      return this.saveToKVFallback(userId, messages);
-    }
+    if (!this.apiKey) return this.saveToKVFallback(userId, messages);
 
     try {
-      const response = await fetch(`${this.baseUrl}/memories/`, {
+      // Mem0's current additive pipeline is V3. Processing is asynchronous and
+      // normally returns 202 with an event_id, which still means the request was accepted.
+      const response = await fetch(`${MEM0_V3_URL}/memories/add/`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
-          messages: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages,
           user_id: String(userId),
           agent_id: agentId,
           metadata: {
@@ -49,7 +45,7 @@ export class MemorySaver {
       });
 
       if (!response.ok) {
-        Logger.warn(`Mem0 add memory failed with status ${response.status}`);
+        Logger.warn(`Mem0 V3 add memory failed with status ${response.status}: ${await response.text()}`);
         return this.saveToKVFallback(userId, messages);
       }
 
@@ -65,7 +61,7 @@ export class MemorySaver {
     if (!this.apiKey) return true;
 
     try {
-      const res = await fetch(`${this.baseUrl}/memories/${memoryId}/`, {
+      const res = await fetch(`${MEM0_V1_URL}/memories/${encodeURIComponent(memoryId)}/`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
@@ -77,14 +73,18 @@ export class MemorySaver {
   }
 
   async clearUserMemories(userId: number | string, agentId: string = 'luna'): Promise<boolean> {
-    if (this.kv) {
-      await this.kv.delete(`memories:${userId}`);
-    }
-
+    if (this.kv) await this.kv.delete(`memories:${userId}`);
     if (!this.apiKey) return true;
 
     try {
-      const res = await fetch(`${this.baseUrl}/memories/?user_id=${userId}&agent_id=${agentId}`, {
+      const params = new URLSearchParams({
+        user_id: String(userId),
+        agent_id: agentId,
+      });
+      if (this.orgId) params.set('org_id', this.orgId);
+      if (this.projectId) params.set('project_id', this.projectId);
+
+      const res = await fetch(`${MEM0_V1_URL}/memories/?${params.toString()}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
@@ -103,7 +103,7 @@ export class MemorySaver {
 
     try {
       const existing = (await this.kv.get<string[]>(`memories:${userId}`)) || [];
-      const userMsg = messages.find((m) => m.role === 'user')?.content;
+      const userMsg = messages.find((message) => message.role === 'user')?.content;
       if (userMsg && userMsg.length > 8 && !userMsg.startsWith('/')) {
         const snippet = userMsg.slice(0, 120);
         if (!existing.includes(snippet)) {
