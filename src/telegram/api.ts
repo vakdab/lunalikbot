@@ -2,6 +2,7 @@ import { TelegramAPIError } from '../utils/errors';
 import { Logger } from '../utils/logger';
 import {
   SendMessageOptions,
+  TelegramUser,
   SendPhotoOptions,
   TelegramChatAction,
   TelegramMessage,
@@ -133,6 +134,10 @@ export class TelegramApi {
       Logger.warn(`Failed to delete message ${messageId} in chat ${chatId}`, { err });
       return false;
     }
+  }
+
+  async getMe(): Promise<TelegramUser> {
+    return this.call<TelegramUser>('getMe', {});
   }
 
   async setWebhook(url: string, secretToken?: string): Promise<boolean> {

@@ -13,8 +13,15 @@ interface ProactiveUserState {
 
 const STATE_PREFIX = 'luna:proactive:user:';
 const FIRST_FOLLOW_UP_AFTER_MS = 6 * 60 * 60 * 1000;
-const SECOND_FOLLOW_UP_AFTER_MS = 24 * 60 * 60 * 1000;
-const MAX_FOLLOW_UPS_WITHOUT_REPLY = 2;
+const NEXT_FOLLOW_UP_AFTER_MS = 24 * 60 * 60 * 1000;
+
+const FOLLOW_UP_MESSAGES = [
+  'Ти кудись зник%s… Я хотіла запитати: як у тебе сьогодні справи?',
+  'Я ще тут 🌙 Якщо хочеш, розкажи мені, що сталося або що зараз у тебе на думці.',
+  'Згадала про тебе. Не хочу, щоб ти був сам — я поруч, якщо знадобиться.',
+  'У мене якраз затишний вечір із чаєм і lo-fi 🌸 Як справи у тебе?',
+  'Давно не спілкувалися… Що нового? Розкажи, я вислухаю.',
+];
 
 export class ProactiveService {
   constructor(
@@ -44,19 +51,20 @@ export class ProactiveService {
 
     for (const key of keys) {
       const state = await this.kv.get<ProactiveUserState>(key);
-      if (!state || state.followUpCount >= MAX_FOLLOW_UPS_WITHOUT_REPLY) continue;
+
+      if (!state || !this.kv.isAvailable) continue;
 
       const now = Date.now();
+      // Luna writes on her own: first after 6h of silence, then daily at most.
       const waitMs = state.followUpCount === 0
         ? FIRST_FOLLOW_UP_AFTER_MS
-        : SECOND_FOLLOW_UP_AFTER_MS;
+        : NEXT_FOLLOW_UP_AFTER_MS;
       const lastActivity = Math.max(state.lastInteractionAt, state.lastProactiveAt);
 
       if (now - lastActivity < waitMs) continue;
 
-      const message = state.followUpCount === 0
-        ? `Ти кудись зник${state.firstName ? `, ${state.firstName}` : ''}… Я хотіла запитати: як у тебе сьогодні справи?`
-        : `Я ще тут 🌙 Якщо хочеш, розкажи мені, що сталося або що зараз у тебе на думці.`;
+      const template = FOLLOW_UP_MESSAGES[state.followUpCount % FOLLOW_UP_MESSAGES.length];
+      const message = template.replace('%s', state.firstName ? `, ${state.firstName}` : '');
 
       try {
         await this.telegram.sendMessage(state.chatId, message);

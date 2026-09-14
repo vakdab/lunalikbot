@@ -12,6 +12,7 @@ import { validateTelegramSecret } from './utils/validation';
 import { Logger } from './utils/logger';
 import { ProactiveService } from './luna/proactive';
 import { parseReminderRequest, ReminderService } from './luna/reminders';
+import { GroupService } from './luna/groups';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -56,6 +57,7 @@ export default {
       const kvStorage = new KVStorage(env.LUNA_KV);
       const proactive = new ProactiveService(kvStorage, telegram);
       const reminders = new ReminderService(kvStorage, telegram);
+      const groups = new GroupService(telegram);
       const userRepo = new UserRepository(new D1Client(env.DB), kvStorage);
       const memory = new MemoryService(config.mem0ApiKey, kvStorage, env.MEM0_ORG_ID, env.MEM0_PROJECT_ID);
       const aiProvider = AIProviderFactory.create(config);
@@ -96,6 +98,25 @@ export default {
         }
       }
 
+      const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
+
+      // Group mode: silent spam moderation + replies when addressed.
+      if (isGroup) {
+        const removed = await groups.moderate(message);
+        if (!removed && message.text) {
+          const addressed = await groups.isAddressedToBot(message);
+          if (addressed) {
+            const cleanText = groups.stripMention(message.text);
+            if (cleanText.length > 0) {
+              message.text = cleanText;
+              const appCtx: AppContext = { env, config, executionCtx };
+              await luna.handleUserMessage(message, appCtx);
+            }
+          }
+        }
+        return new Response('OK');
+      }
+
       // The bot has one purpose: conversation. /start is just a clean greeting;
       // every other text message goes through the same chat + memory pipeline.
       if (/^\/start(?:@\w+)?$/i.test(message.text?.trim() || '')) {
@@ -123,6 +144,7 @@ export default {
       const kvStorage = new KVStorage(env.LUNA_KV);
       const proactive = new ProactiveService(kvStorage, telegram);
       const reminders = new ReminderService(kvStorage, telegram);
+      const groups = new GroupService(telegram);
       executionCtx.waitUntil(Promise.all([
         proactive.sendDueFollowUps(),
         reminders.sendDueReminders(),
