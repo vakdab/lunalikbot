@@ -42,7 +42,7 @@ export class LunaCompanion {
         relevantMemories,
       });
 
-      const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою 🌙';
+      const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою.';
       await this.telegram.sendMessage(message.chat.id, escapeHtml(replyText));
 
       // Memory is automatic and never blocks the reply.
