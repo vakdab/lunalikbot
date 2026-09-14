@@ -77,7 +77,8 @@ export function isWeatherRequest(text: string): boolean {
   const normalized = text.trim().toLocaleLowerCase('uk-UA');
   return /^(?:\/weather(?:@\w+)?|\/погода(?:@\w+)?)(?:\s+.*)?$/.test(normalized)
     || /\b(?:яка|яку|який|яке)\s+(?:сьогодні\s+)?погод[аиу]/u.test(normalized)
-    || /\bпогод[аиу]\b/u.test(normalized) && /\b(?:сьогодні|зараз|рол(?:ів|ова|еві)|там|на вулиці)\b/u.test(normalized);
+    || /\b(?:скажи|розкажи|покажи|дай)\s+(?:мені\s+)?(?:про\s+)?погод[уиа]/u.test(normalized)
+    || /\bпогод[аиу]\b/u.test(normalized) && /\b(?:сьогодні|зараз|рол(?:ів|ова|еві)|там|тут|цьому\s+місті|цьому\s+місці|на\s+вулиці)\b/u.test(normalized);
 }
 
 export async function getRolivWeather(): Promise<string> {
