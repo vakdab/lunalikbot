@@ -59,7 +59,7 @@ export function parseReminderRequest(input: string, now = new Date()): { text: s
     return { text: relative[3].trim(), dueAt: now.getTime() + amount * multiplier };
   }
 
-  const atTime = rest.match(/^(сьогодні|завтра|післязавтра)?\s*(?:о|от)\s*(\d{1,2})(?::|\.)?(\d{2})?\s+(.+)$/i);
+  const atTime = rest.match(/^(сьогодні|завтра|післязавтра)?\s*(?:о|об|в|у|от)\s*(\d{1,2})(?::|\.)?(\d{2})?\s+(.+)$/i);
   if (!atTime) return null;
 
   const dayName = (atTime[1] || '').toLowerCase();

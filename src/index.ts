@@ -97,6 +97,16 @@ export default {
           await telegram.sendMessage(message.chat.id, `Добре, нагадаю ${due}: ${escapeHtml(reminder.text)}`);
           return new Response('OK');
         }
+
+        // Never let the AI pretend it scheduled something when the parser did
+        // not understand the wording. Ask for a supported natural format.
+        if (/^нагадай(?:\s+мені)?\b/i.test(message.text.trim())) {
+          await telegram.sendMessage(
+            message.chat.id,
+            'Я хочу точно зберегти це нагадування ⏰ Напиши, наприклад: «нагадай мені завтра о 8:00 помити підлогу» або «нагадай мені в 18:30 зателефонувати». '
+          );
+          return new Response('OK');
+        }
       }
 
       const isGroup = message.chat.type === 'group' || message.chat.type === 'supergroup';
