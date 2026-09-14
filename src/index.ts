@@ -13,6 +13,7 @@ import { Logger } from './utils/logger';
 import { ProactiveService } from './luna/proactive';
 import { parseReminderRequest, ReminderService } from './luna/reminders';
 import { GroupService } from './luna/groups';
+import { escapeHtml } from './utils/html';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -93,7 +94,7 @@ export default {
             timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit',
             day: '2-digit', month: '2-digit',
           }).format(new Date(reminder.dueAt));
-          await telegram.sendMessage(message.chat.id, `Добре, нагадаю ${due}: ${reminder.text}`);
+          await telegram.sendMessage(message.chat.id, `Добре, нагадаю ${due}: ${escapeHtml(reminder.text)}`);
           return new Response('OK');
         }
       }

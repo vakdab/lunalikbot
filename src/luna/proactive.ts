@@ -1,6 +1,7 @@
 import { KVStorage } from '../database/kv';
 import { TelegramApi } from '../telegram/api';
 import { Logger } from '../utils/logger';
+import { escapeHtml } from '../utils/html';
 
 interface ProactiveUserState {
   userId: number;
@@ -64,7 +65,7 @@ export class ProactiveService {
       if (now - lastActivity < waitMs) continue;
 
       const template = FOLLOW_UP_MESSAGES[state.followUpCount % FOLLOW_UP_MESSAGES.length];
-      const message = template.replace('%s', state.firstName ? `, ${state.firstName}` : '');
+      const message = template.replace('%s', state.firstName ? `, ${escapeHtml(state.firstName)}` : '');
 
       try {
         await this.telegram.sendMessage(state.chatId, message);

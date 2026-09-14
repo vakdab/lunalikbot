@@ -1,6 +1,7 @@
 import { KVStorage } from '../database/kv';
 import { TelegramApi } from '../telegram/api';
 import { Logger } from '../utils/logger';
+import { escapeHtml } from '../utils/html';
 
 export interface Reminder {
   id: string;
@@ -99,7 +100,7 @@ export class ReminderService {
       if (!reminder || reminder.dueAt > now) continue;
 
       try {
-        await this.telegram.sendMessage(reminder.chatId, `⏰ Нагадування: ${reminder.text}`);
+        await this.telegram.sendMessage(reminder.chatId, `⏰ Нагадування: ${escapeHtml(reminder.text)}`);
         await this.kv.delete(key);
         sent += 1;
       } catch (error) {

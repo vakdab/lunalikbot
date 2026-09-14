@@ -23,6 +23,15 @@ export class OpenAIProvider implements AIProvider {
     if (thoughtMatch) {
       innerThought = thoughtMatch[1].trim();
       workingText = workingText.replace(thoughtMatch[0], '').trim();
+    } else {
+      // maxTokens can truncate the response mid-thought, leaving an unclosed
+      // <thought> tag. Treat everything from that point on as the (partial)
+      // inner monologue instead of leaking raw tag text into the chat.
+      const openThoughtIndex = workingText.search(/<thought>/i);
+      if (openThoughtIndex !== -1) {
+        innerThought = workingText.slice(openThoughtIndex + '<thought>'.length).trim();
+        workingText = workingText.slice(0, openThoughtIndex).trim();
+      }
     }
 
     const emotionMatch = workingText.match(/\[EMOTION:\s*(idle|happy|sad|angry|sleepy|love|confused|surprised)\s*\]/i);

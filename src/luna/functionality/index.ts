@@ -7,6 +7,7 @@ import { AIProvider } from '../ai/types';
 import { LunaChatService } from '../ai/chat';
 import { Logger } from '../../utils/logger';
 import { AppError } from '../../utils/errors';
+import { escapeHtml } from '../../utils/html';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -41,17 +42,18 @@ export class LunaCompanion {
         relevantMemories,
       });
 
-      await this.telegram.sendMessage(message.chat.id, response.cleanText);
+      const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою 🌙';
+      await this.telegram.sendMessage(message.chat.id, escapeHtml(replyText));
 
       // Memory is automatic and never blocks the reply.
       ctx.executionCtx.waitUntil(
-        this.memory.saveExchange(user.id, message.text, response.cleanText).catch(err =>
+        this.memory.saveExchange(user.id, message.text, replyText).catch(err =>
           Logger.error('Automatic memory save failed', err)
         )
       );
     } catch (err) {
       Logger.error('Chat response failed', err);
-      const diagnostic = err instanceof AppError ? `\n\nДеталі: ${err.message.slice(0, 300)}` : '';
+      const diagnostic = err instanceof AppError ? `\n\nДеталі: ${escapeHtml(err.message.slice(0, 300))}` : '';
       await this.telegram.sendMessage(
         message.chat.id,
         `Я не змогла відповісти зараз. Напиши ще раз трохи пізніше.${diagnostic}`
