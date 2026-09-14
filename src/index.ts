@@ -15,6 +15,7 @@ import { parseReminderRequest, ReminderService } from './luna/reminders';
 import { GroupService } from './luna/groups';
 import { escapeHtml } from './utils/html';
 import { ConversationHistory } from './luna/history';
+import { getRolivWeather, isWeatherRequest } from './weather';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -78,6 +79,21 @@ export default {
         await proactive.touch(message.from.id, message.chat.id, message.from.first_name);
       }
 
+      // Weather is a deterministic public command and should not spend an AI request.
+      if (message.chat.type === 'private' && message.text && isWeatherRequest(message.text)) {
+        try {
+          await telegram.sendChatAction(message.chat.id, 'typing');
+          await telegram.sendMessage(message.chat.id, await getRolivWeather());
+        } catch (err) {
+          Logger.error('Weather request failed', err);
+          await telegram.sendMessage(
+            message.chat.id,
+            'Не можу зараз отримати актуальну погоду. Спробуй, будь ласка, ще раз за хвилину.'
+          );
+        }
+        return new Response('OK');
+      }
+
       // Natural-language reminders work without commands: «нагадай завтра о 6:00 ...».
       if (message.chat.type === 'private' && message.text) {
         const reminderRequest = parseReminderRequest(message.text);
@@ -121,6 +137,19 @@ export default {
           if (addressed) {
             const cleanText = groups.stripMention(message.text);
             if (cleanText.length > 0) {
+              if (isWeatherRequest(cleanText)) {
+                try {
+                  await telegram.sendChatAction(message.chat.id, 'typing');
+                  await telegram.sendMessage(message.chat.id, await getRolivWeather());
+                } catch (err) {
+                  Logger.error('Group weather request failed', err);
+                  await telegram.sendMessage(
+                    message.chat.id,
+                    'Не можу зараз отримати актуальну погоду. Спробуйте, будь ласка, ще раз за хвилину.'
+                  );
+                }
+                return new Response('OK');
+              }
               message.text = cleanText;
               const appCtx: AppContext = { env, config, executionCtx };
               await luna.handleUserMessage(message, appCtx);
