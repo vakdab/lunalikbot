@@ -14,6 +14,7 @@ import { ProactiveService } from './luna/proactive';
 import { parseReminderRequest, ReminderService } from './luna/reminders';
 import { GroupService } from './luna/groups';
 import { escapeHtml } from './utils/html';
+import { ConversationHistory } from './luna/history';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -61,8 +62,9 @@ export default {
       const groups = new GroupService(telegram);
       const userRepo = new UserRepository(new D1Client(env.DB), kvStorage);
       const memory = new MemoryService(config.mem0ApiKey, kvStorage, env.MEM0_ORG_ID, env.MEM0_PROJECT_ID);
+      const history = new ConversationHistory(kvStorage);
       const aiProvider = AIProviderFactory.create(config);
-      const luna = new LunaCompanion(telegram, userRepo, memory, aiProvider);
+      const luna = new LunaCompanion(telegram, userRepo, memory, history, aiProvider);
       const update: TelegramUpdate = await request.json();
       const message = update.message;
 

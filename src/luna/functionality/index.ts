@@ -8,6 +8,7 @@ import { LunaChatService } from '../ai/chat';
 import { Logger } from '../../utils/logger';
 import { AppError } from '../../utils/errors';
 import { escapeHtml } from '../../utils/html';
+import { ConversationHistory } from '../history';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -16,6 +17,7 @@ export class LunaCompanion {
     private readonly telegram: TelegramApi,
     private readonly userRepo: UserRepository,
     private readonly memory: MemoryService,
+    private readonly history: ConversationHistory,
     private readonly aiProvider: AIProvider
   ) {
     this.chatService = new LunaChatService(this.aiProvider);
@@ -26,6 +28,7 @@ export class LunaCompanion {
     if (!from || !message.text) return;
 
     const user = await this.userRepo.getOrCreate(from);
+    const recentHistory = await this.history.get(message.chat.id, from.id);
     await this.telegram.sendChatAction(message.chat.id, 'typing');
 
     let relevantMemories: string[] = [];
@@ -40,17 +43,21 @@ export class LunaCompanion {
         user,
         userMessage: message.text,
         relevantMemories,
+        recentHistory,
       });
 
       const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою.';
       await this.telegram.sendMessage(message.chat.id, escapeHtml(replyText));
 
       // Memory is automatic and never blocks the reply.
-      ctx.executionCtx.waitUntil(
+      ctx.executionCtx.waitUntil(Promise.all([
         this.memory.saveExchange(user.id, message.text, replyText).catch(err =>
           Logger.error('Automatic memory save failed', err)
-        )
-      );
+        ),
+        this.history.append(message.chat.id, from.id, message.text, replyText).catch(err =>
+          Logger.error('Conversation history save failed', err)
+        ),
+      ]));
     } catch (err) {
       Logger.error('Chat response failed', err);
       const diagnostic = err instanceof AppError ? `\n\nДеталі: ${escapeHtml(err.message.slice(0, 300))}` : '';
