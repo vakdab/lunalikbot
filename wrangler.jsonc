@@ -7,7 +7,7 @@
     "nodejs_compat"
   ],
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["* * * * *"]
   },
   "kv_namespaces": [
     {

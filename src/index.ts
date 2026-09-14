@@ -11,6 +11,7 @@ import { LunaCompanion } from './luna/functionality';
 import { validateTelegramSecret } from './utils/validation';
 import { Logger } from './utils/logger';
 import { ProactiveService } from './luna/proactive';
+import { parseReminderRequest, ReminderService } from './luna/reminders';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -39,7 +40,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
-      return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups' });
+      return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups + natural reminders' });
     }
 
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
@@ -54,6 +55,7 @@ export default {
       const telegram = new TelegramApi(config.telegramToken);
       const kvStorage = new KVStorage(env.LUNA_KV);
       const proactive = new ProactiveService(kvStorage, telegram);
+      const reminders = new ReminderService(kvStorage, telegram);
       const userRepo = new UserRepository(new D1Client(env.DB), kvStorage);
       const memory = new MemoryService(config.mem0ApiKey, kvStorage, env.MEM0_ORG_ID, env.MEM0_PROJECT_ID);
       const aiProvider = AIProviderFactory.create(config);
@@ -69,6 +71,29 @@ export default {
 
       if (message.chat.type === 'private') {
         await proactive.touch(message.from.id, message.chat.id, message.from.first_name);
+      }
+
+      // Natural-language reminders work without commands: «нагадай завтра о 6:00 ...».
+      if (message.chat.type === 'private' && message.text) {
+        const reminderRequest = parseReminderRequest(message.text);
+        if (reminderRequest) {
+          if (!kvStorage.isAvailable) {
+            await telegram.sendMessage(message.chat.id, 'Я зможу нагадати, щойно для мене буде підключено сховище нагадувань.');
+            return new Response('OK');
+          }
+          const reminder = await reminders.create(
+            message.from.id,
+            message.chat.id,
+            reminderRequest.text,
+            reminderRequest.dueAt
+          );
+          const due = new Intl.DateTimeFormat('uk-UA', {
+            timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit',
+            day: '2-digit', month: '2-digit',
+          }).format(new Date(reminder.dueAt));
+          await telegram.sendMessage(message.chat.id, `Добре, нагадаю ${due}: ${reminder.text}`);
+          return new Response('OK');
+        }
       }
 
       // The bot has one purpose: conversation. /start is just a clean greeting;
@@ -95,12 +120,15 @@ export default {
     try {
       const config = parseConfig(env);
       const telegram = new TelegramApi(config.telegramToken);
-      const proactive = new ProactiveService(new KVStorage(env.LUNA_KV), telegram);
-      executionCtx.waitUntil(
-        proactive.sendDueFollowUps().then((count) =>
-          Logger.info(`Proactive follow-up scan completed: ${count} message(s) sent`)
-        )
-      );
+      const kvStorage = new KVStorage(env.LUNA_KV);
+      const proactive = new ProactiveService(kvStorage, telegram);
+      const reminders = new ReminderService(kvStorage, telegram);
+      executionCtx.waitUntil(Promise.all([
+        proactive.sendDueFollowUps(),
+        reminders.sendDueReminders(),
+      ]).then(([followUps, dueReminders]) =>
+        Logger.info(`Scheduled scan completed: ${followUps} follow-up(s), ${dueReminders} reminder(s) sent`)
+      ));
     } catch (err) {
       Logger.error('Scheduled proactive follow-up failed', err);
     }
