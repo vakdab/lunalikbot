@@ -16,6 +16,7 @@ import { GroupService } from './luna/groups';
 import { escapeHtml } from './utils/html';
 import { ConversationHistory } from './luna/history';
 import { LunaToolService } from './luna/tools';
+import { SerpApiSearchService } from './luna/search';
 import { getRolivWeather, isWeatherRequest } from './weather';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
@@ -71,8 +72,15 @@ export default {
         visionApiKey: config.visionApiKey,
         visionModel: config.visionModelName,
       });
+      const search = new SerpApiSearchService({
+        apiKey: config.searchApiKey,
+        location: config.searchLocation,
+        language: config.searchLanguage,
+        country: config.searchCountry,
+        googleDomain: config.searchGoogleDomain,
+      });
       const aiProvider = AIProviderFactory.create(config);
-      const luna = new LunaCompanion(telegram, userRepo, memory, history, tools, aiProvider);
+      const luna = new LunaCompanion(telegram, userRepo, memory, history, tools, search, aiProvider);
       const update: TelegramUpdate = await request.json();
       const message = update.message;
 

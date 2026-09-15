@@ -10,13 +10,14 @@ export interface LunaConversationContext {
   relevantMemories?: string[];
   recentHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   intent?: IntentResult;
+  searchContext?: string;
 }
 
 export class LunaChatService {
   constructor(private readonly provider: AIProvider) {}
 
   async respond(context: LunaConversationContext): Promise<AIResponse> {
-    const { user, userMessage, relevantMemories, recentHistory = [], intent } = context;
+    const { user, userMessage, relevantMemories, recentHistory = [], intent, searchContext } = context;
 
     // 1. Time in Kyiv
     const now = new Date();
@@ -35,6 +36,7 @@ export class LunaChatService {
       currentTimeString: timeString,
       timeOfDayGreeting: greeting,
       intent: intent?.intent,
+      searchContext,
     });
 
     // 3. Messages array

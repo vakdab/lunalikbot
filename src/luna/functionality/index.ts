@@ -11,6 +11,7 @@ import { escapeHtml } from '../../utils/html';
 import { ConversationHistory } from '../history';
 import { LunaToolService } from '../tools';
 import { IntentRouter } from '../router';
+import { SerpApiSearchService } from '../search';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -22,6 +23,7 @@ export class LunaCompanion {
     private readonly memory: MemoryService,
     private readonly history: ConversationHistory,
     private readonly tools: LunaToolService,
+    private readonly search: SerpApiSearchService,
     private readonly aiProvider: AIProvider
   ) {
     this.chatService = new LunaChatService(this.aiProvider);
@@ -74,12 +76,25 @@ export class LunaCompanion {
     }
 
     try {
+      const intent = this.router.detectText(message.text);
+      let searchContext: string | undefined;
+      if (intent.intent === 'WEB_SEARCH' && this.search.isConfigured) {
+        await this.telegram.sendChatAction(message.chat.id, 'typing');
+        const results = await this.search.search(message.text, 5);
+        searchContext = results.length
+          ? results.map((result, index) => `${index + 1}. ${result.title}\nURL: ${result.link}\n${result.snippet || ''}`).join('\n\n')
+          : 'Пошук не повернув результатів.';
+      } else if (intent.intent === 'WEB_SEARCH') {
+        searchContext = 'SerpAPI не налаштований. Не вигадуй результати пошуку і чесно повідом про це.';
+      }
+
       const response = await this.chatService.respond({
         user,
         userMessage: message.text,
         relevantMemories,
         recentHistory,
-        intent: this.router.detectText(message.text),
+        intent,
+        searchContext,
       });
 
       const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою.';

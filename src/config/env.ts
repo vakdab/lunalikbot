@@ -10,6 +10,11 @@ export interface Env {
   VISION_AI_MODEL_NAME?: string;
   AI_TOOLS_URL?: string;
   AI_TOOLS_SECRET?: string;
+  SEARCH_API_KEY?: string;
+  SEARCH_LOCATION?: string;
+  SEARCH_HL?: string;
+  SEARCH_GL?: string;
+  SEARCH_GOOGLE_DOMAIN?: string;
 
   // Environment Variables
   ENVIRONMENT?: string;
@@ -39,6 +44,11 @@ export interface AppConfig {
   visionModelName: string;
   toolsUrl?: string;
   toolsSecret?: string;
+  searchApiKey?: string;
+  searchLocation?: string;
+  searchLanguage?: string;
+  searchCountry?: string;
+  searchGoogleDomain?: string;
   mediaStorageType: 'telegram_cache' | 'r2' | 'cdn';
   mediaBaseUrl?: string;
   rateLimitPerMinute: number;
@@ -73,6 +83,11 @@ export function parseConfig(env: Env): AppConfig {
     visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-2.5-flash',
     toolsUrl: env.AI_TOOLS_URL,
     toolsSecret: env.AI_TOOLS_SECRET,
+    searchApiKey: env.SEARCH_API_KEY,
+    searchLocation: env.SEARCH_LOCATION,
+    searchLanguage: env.SEARCH_HL,
+    searchCountry: env.SEARCH_GL,
+    searchGoogleDomain: env.SEARCH_GOOGLE_DOMAIN,
     mediaStorageType: (env.MEDIA_STORAGE_TYPE as any) || 'telegram_cache',
     mediaBaseUrl: env.MEDIA_BASE_URL,
     rateLimitPerMinute: typeof env.RATE_LIMIT_PER_MINUTE === 'number' ? env.RATE_LIMIT_PER_MINUTE : parseInt(String(env.RATE_LIMIT_PER_MINUTE || '30'), 10),
