@@ -15,6 +15,7 @@ import { parseReminderRequest, ReminderService } from './luna/reminders';
 import { GroupService } from './luna/groups';
 import { escapeHtml } from './utils/html';
 import { ConversationHistory } from './luna/history';
+import { LunaToolService } from './luna/tools';
 import { getRolivWeather, isWeatherRequest } from './weather';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
@@ -64,8 +65,14 @@ export default {
       const userRepo = new UserRepository(new D1Client(env.DB), kvStorage);
       const memory = new MemoryService(config.mem0ApiKey, kvStorage, env.MEM0_ORG_ID, env.MEM0_PROJECT_ID);
       const history = new ConversationHistory(kvStorage);
+      const tools = new LunaToolService(telegram, {
+        url: config.toolsUrl,
+        secret: config.toolsSecret,
+        visionApiKey: config.visionApiKey,
+        visionModel: config.visionModelName,
+      });
       const aiProvider = AIProviderFactory.create(config);
-      const luna = new LunaCompanion(telegram, userRepo, memory, history, aiProvider);
+      const luna = new LunaCompanion(telegram, userRepo, memory, history, tools, aiProvider);
       const update: TelegramUpdate = await request.json();
       const message = update.message;
 
@@ -148,11 +155,11 @@ export default {
                     'Не можу зараз отримати актуальну погоду. Спробуйте, будь ласка, ще раз за хвилину.'
                   );
                 }
-                return new Response('OK');
+              } else {
+                message.text = cleanText;
+                const appCtx: AppContext = { env, config, executionCtx };
+                await luna.handleUserMessage(message, appCtx);
               }
-              message.text = cleanText;
-              const appCtx: AppContext = { env, config, executionCtx };
-              await luna.handleUserMessage(message, appCtx);
             }
           }
         }
@@ -167,6 +174,9 @@ export default {
           LUNA_WELCOME_IMAGE_URL,
           { caption: LUNA_WELCOME_CAPTION, parse_mode: 'HTML' }
         );
+      } else if (message.photo?.length) {
+        const appCtx: AppContext = { env, config, executionCtx };
+        await luna.handlePhotoMessage(message, appCtx);
       } else if (message.text) {
         const appCtx: AppContext = { env, config, executionCtx };
         await luna.handleUserMessage(message, appCtx);

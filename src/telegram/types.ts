@@ -16,6 +16,21 @@ export interface TelegramChat {
   last_name?: string;
 }
 
+export interface TelegramFile {
+  file_id: string;
+  file_unique_id: string;
+  file_size?: number;
+  file_path?: string;
+}
+
+export interface TelegramDocument {
+  file_id: string;
+  file_unique_id: string;
+  file_name?: string;
+  mime_type?: string;
+  file_size?: number;
+}
+
 export interface TelegramPhotoSize {
   file_id: string;
   file_unique_id: string;
@@ -50,6 +65,7 @@ export interface TelegramMessage {
   chat: TelegramChat;
   text?: string;
   photo?: TelegramPhotoSize[];
+  document?: TelegramDocument;
   voice?: TelegramVoice;
   sticker?: TelegramSticker;
   caption?: string;

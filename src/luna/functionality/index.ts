@@ -9,6 +9,7 @@ import { Logger } from '../../utils/logger';
 import { AppError } from '../../utils/errors';
 import { escapeHtml } from '../../utils/html';
 import { ConversationHistory } from '../history';
+import { LunaToolService } from '../tools';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -18,9 +19,41 @@ export class LunaCompanion {
     private readonly userRepo: UserRepository,
     private readonly memory: MemoryService,
     private readonly history: ConversationHistory,
+    private readonly tools: LunaToolService,
     private readonly aiProvider: AIProvider
   ) {
     this.chatService = new LunaChatService(this.aiProvider);
+  }
+
+  async handlePhotoMessage(message: TelegramMessage, ctx: AppContext): Promise<void> {
+    const from = message.from;
+    const largestPhoto = message.photo?.[message.photo.length - 1];
+    if (!from || !largestPhoto) return;
+
+    const user = await this.userRepo.getOrCreate(from);
+    const userText = message.caption?.trim() || '[Користувач надіслав фото]';
+    await this.telegram.sendChatAction(message.chat.id, 'upload_photo');
+
+    try {
+      const result = await this.tools.analyzeTelegramPhoto(largestPhoto.file_id, message.caption);
+      const replyText = result.text.trim() || 'Я не змогла розібрати це фото.';
+      await this.telegram.sendMessage(message.chat.id, escapeHtml(replyText));
+      ctx.executionCtx.waitUntil(Promise.all([
+        this.memory.saveExchange(user.id, userText, replyText).catch(err =>
+          Logger.error('Photo memory save failed', err)
+        ),
+        this.history.append(message.chat.id, from.id, userText, replyText).catch(err =>
+          Logger.error('Photo conversation history save failed', err)
+        ),
+      ]));
+    } catch (err) {
+      Logger.error('Photo analysis failed', err);
+      const detail = err instanceof AppError ? `\n\nДеталі: ${escapeHtml(err.message.slice(0, 300))}` : '';
+      await this.telegram.sendMessage(
+        message.chat.id,
+        `Я поки не можу проаналізувати фото. Перевір, чи підключений Vision-сервіс, або надішли текстом, що саме потрібно зробити.${detail}`
+      );
+    }
   }
 
   async handleUserMessage(message: TelegramMessage, ctx: AppContext): Promise<void> {

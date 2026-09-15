@@ -66,6 +66,45 @@ export class TelegramApi {
     });
   }
 
+  async getFile(fileId: string): Promise<import('./types').TelegramFile> {
+    return this.call<import('./types').TelegramFile>('getFile', { file_id: fileId });
+  }
+
+  async downloadFile(filePath: string): Promise<ArrayBuffer> {
+    const response = await fetch(`https://api.telegram.org/file/bot${this.token}/${filePath}`);
+    if (!response.ok) {
+      throw new TelegramAPIError(`Telegram file download failed with status ${response.status}`);
+    }
+    return response.arrayBuffer();
+  }
+
+  async sendDocument(
+    chatId: number | string,
+    document: Blob | ArrayBuffer | Uint8Array | string,
+    filename: string,
+    options?: SendMessageOptions & { caption?: string }
+  ): Promise<TelegramMessage> {
+    const form = new FormData();
+    form.append('chat_id', String(chatId));
+    const value: string | Blob = typeof document === 'string'
+      ? document
+      : document instanceof Blob
+        ? document
+        : new Blob([document as unknown as BlobPart], { type: 'application/octet-stream' });
+    if (typeof value === 'string') form.append('document', value);
+    else form.append('document', value, filename);
+    if (options?.caption) form.append('caption', options.caption);
+    if (options?.parse_mode) form.append('parse_mode', options.parse_mode);
+    if (options?.reply_to_message_id) form.append('reply_to_message_id', String(options.reply_to_message_id));
+
+    const response = await fetch(`${this.baseUrl}/sendDocument`, { method: 'POST', body: form });
+    const data: any = await response.json();
+    if (!response.ok || !data.ok) {
+      throw new TelegramAPIError(data?.description || 'Telegram sendDocument failed');
+    }
+    return data.result as TelegramMessage;
+  }
+
   async sendPhoto(
     chatId: number | string,
     photo: string, // URL or Telegram file_id

@@ -6,6 +6,10 @@ export interface Env {
   MEM0_API_KEY?: string;
   MEM0_ORG_ID?: string;
   MEM0_PROJECT_ID?: string;
+  VISION_AI_API_KEY?: string;
+  VISION_AI_MODEL_NAME?: string;
+  AI_TOOLS_URL?: string;
+  AI_TOOLS_SECRET?: string;
 
   // Environment Variables
   ENVIRONMENT?: string;
@@ -31,6 +35,10 @@ export interface AppConfig {
   aiApiKey: string;
   aiModelName: string;
   mem0ApiKey?: string;
+  visionApiKey?: string;
+  visionModelName: string;
+  toolsUrl?: string;
+  toolsSecret?: string;
   mediaStorageType: 'telegram_cache' | 'r2' | 'cdn';
   mediaBaseUrl?: string;
   rateLimitPerMinute: number;
@@ -61,6 +69,10 @@ export function parseConfig(env: Env): AppConfig {
           ? 'openai/gpt-oss-120b'
           : 'gemini-2.5-flash'),
     mem0ApiKey,
+    visionApiKey: env.VISION_AI_API_KEY,
+    visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-2.5-flash',
+    toolsUrl: env.AI_TOOLS_URL,
+    toolsSecret: env.AI_TOOLS_SECRET,
     mediaStorageType: (env.MEDIA_STORAGE_TYPE as any) || 'telegram_cache',
     mediaBaseUrl: env.MEDIA_BASE_URL,
     rateLimitPerMinute: typeof env.RATE_LIMIT_PER_MINUTE === 'number' ? env.RATE_LIMIT_PER_MINUTE : parseInt(String(env.RATE_LIMIT_PER_MINUTE || '30'), 10),
