@@ -2,19 +2,21 @@ import { assembleSystemPrompt } from '../prompt/system';
 import { UserProfile } from '../../database/types';
 import { AIProvider, AIResponse } from './types';
 import { Logger } from '../../utils/logger';
+import { IntentResult } from '../router';
 
 export interface LunaConversationContext {
   user: UserProfile;
   userMessage: string;
   relevantMemories?: string[];
   recentHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  intent?: IntentResult;
 }
 
 export class LunaChatService {
   constructor(private readonly provider: AIProvider) {}
 
   async respond(context: LunaConversationContext): Promise<AIResponse> {
-    const { user, userMessage, relevantMemories, recentHistory = [] } = context;
+    const { user, userMessage, relevantMemories, recentHistory = [], intent } = context;
 
     // 1. Time in Kyiv
     const now = new Date();
@@ -32,6 +34,7 @@ export class LunaChatService {
       relevantMemories,
       currentTimeString: timeString,
       timeOfDayGreeting: greeting,
+      intent: intent?.intent,
     });
 
     // 3. Messages array

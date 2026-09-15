@@ -10,9 +10,11 @@ import { AppError } from '../../utils/errors';
 import { escapeHtml } from '../../utils/html';
 import { ConversationHistory } from '../history';
 import { LunaToolService } from '../tools';
+import { IntentRouter } from '../router';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
+  private readonly router = new IntentRouter();
 
   constructor(
     private readonly telegram: TelegramApi,
@@ -77,6 +79,7 @@ export class LunaCompanion {
         userMessage: message.text,
         relevantMemories,
         recentHistory,
+        intent: this.router.detectText(message.text),
       });
 
       const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою.';
