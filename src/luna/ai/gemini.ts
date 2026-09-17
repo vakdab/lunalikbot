@@ -102,8 +102,11 @@ export class GeminiProvider implements AIProvider {
 
       if (!res.ok) {
         const errText = await res.text();
-        Logger.error(`Gemini API error (status ${res.status})`, new Error(errText));
-        throw new AIProviderError(`Gemini API returned status ${res.status}`);
+        Logger.error(
+          `Gemini API error (status ${res.status}, model ${this.modelName}, endpoint v1beta)`,
+          new Error(errText)
+        );
+        throw new AIProviderError(`Gemini API returned status ${res.status} for model ${this.modelName}`);
       }
 
       const data: any = await res.json();
