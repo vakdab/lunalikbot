@@ -21,7 +21,7 @@ npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
 npx wrangler secret put AI_API_KEY
 ```
 
-У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-3.8-flash`. Ключ Gemini передається через `AI_API_KEY`. За потреби можна змінити `AI_PROVIDER` на `groq` або `openai` та вказати відповідну модель через `AI_MODEL_NAME`.
+У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-3.6-flash`. Ключ Gemini передається через `AI_API_KEY`. За потреби можна змінити `AI_PROVIDER` на `groq` або `openai` та вказати відповідну модель через `AI_MODEL_NAME`.
 
 ## Автоматичний деплой
 

@@ -69,7 +69,7 @@ export class LunaToolService {
   }
 
   private async callGeminiVision(bytes: ArrayBuffer, mimeType: string, caption?: string): Promise<VisionResult> {
-    const model = this.config.visionModel || 'gemini-3.8-flash';
+    const model = this.config.visionModel || 'gemini-3.6-flash';
     const prompt = `Проаналізуй це зображення для користувача Luna.
 Визнач, що на ньому зображено. Якщо це навчальне завдання, розпізнай умову, предмет, клас і номери завдань та допоможи розв'язати їх. Якщо це звичайне фото, просто опиши його. Не вигадуй текст, якого не видно. Відповідай українською природно й без обов'язкових емодзі.${caption ? `
 Підпис користувача: ${caption}` : ''}`;
