@@ -62,7 +62,7 @@ Worker secrets/vars:
 AI_TOOLS_URL=https://your-tool-service.example.com
 AI_TOOLS_SECRET=...
 VISION_AI_API_KEY=...        # optional lightweight Gemini fallback
-VISION_AI_MODEL_NAME=gemini-2.5-flash
+VISION_AI_MODEL_NAME=gemini-3.8-flash
 SEARCH_API_KEY=...           # SerpAPI secret
 SEARCH_LOCATION=Ukraine
 SEARCH_HL=uk

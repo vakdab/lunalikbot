@@ -10,7 +10,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor(
     private readonly apiKey: string,
-    modelName: string = 'gemini-2.5-flash'
+    modelName: string = 'gemini-3.8-flash'
   ) {
     this.modelName = modelName;
   }
@@ -34,7 +34,9 @@ export class GeminiProvider implements AIProvider {
 
       const preferred = [
         this.modelName,
-        'gemini-2.5-flash',
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-3.5-flash-lite',
         'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
@@ -140,6 +142,8 @@ export class GeminiProvider implements AIProvider {
         const availableModel = await this.findAvailableModel();
         const fallbackModels = [
           availableModel,
+          'gemini-3.5-flash',
+          'gemini-3.5-flash-lite',
           'gemini-2.5-flash-lite',
           'gemini-2.0-flash',
           'gemini-1.5-flash',
