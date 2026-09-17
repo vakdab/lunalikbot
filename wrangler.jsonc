@@ -18,7 +18,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "groq",
-    "AI_MODEL_NAME": "llama-3.1-8b-instant",
+    "AI_MODEL_NAME": "llama3-8b-8192",
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
   },
