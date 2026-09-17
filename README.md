@@ -13,7 +13,7 @@
 
 ## AI-провайдер
 
-Бот за замовчуванням використовує Gemini через OpenAI-сумісний Puter AI endpoint. Це серверний Telegram-бот, тому він викликає Puter з Cloudflare Worker, а не через браузерний CDN-скрипт `puter.js`. Для запуску додайте секрети Cloudflare:
+Бот за замовчуванням використовує Gemini API з безкоштовним тарифом Google AI Studio. Це серверний Telegram-бот, тому він не може використати браузерну сесію `puter.js` користувача. Для запуску додайте секрети Cloudflare:
 
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
@@ -21,9 +21,9 @@ npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
 npx wrangler secret put AI_API_KEY
 ```
 
-У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=puter` і модель `gemini-3.8-flash`. `AI_API_KEY` має містити серверний Puter auth token, створений у [Puter Dashboard](https://puter.com/dashboard) через **Create token**. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) показує браузерний варіант без ключа; для Worker потрібен токен із [OpenAI-compatible API інструкції Puter](https://developer.puter.com/tutorials/use-openai-sdk-with-puter/), інакше endpoint повертає `401 Unauthorized`. За потреби можна змінити `AI_PROVIDER` на `gemini`, `groq` або `openai` та вказати відповідну модель через `AI_MODEL_NAME`.
+У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-2.5-flash`. Створіть безкоштовний ключ у [Google AI Studio](https://aistudio.google.com/apikey) та збережіть його як `AI_API_KEY`. Безкоштовний тариф має обмеження швидкості Google, але не вимагає платної підписки.
 
-Puter endpoint: `https://api.puter.com/puterai/openai/v1/chat/completions`. Worker надсилає стандартний OpenAI-сумісний запит із `Authorization: Bearer <AI_API_KEY>` та моделлю Gemini. Ключ не зберігається в репозиторії — додайте його тільки як Cloudflare Worker secret.
+Puter залишається опційним режимом (`AI_PROVIDER=puter`), але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
 
 ## Автоматичний деплой
 

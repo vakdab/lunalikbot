@@ -77,7 +77,7 @@ export function parseConfig(env: Env): AppConfig {
         ? 'gpt-4o-mini'
         : env.AI_PROVIDER === 'groq'
           ? 'llama-3.1-8b-instant'
-          : 'gemini-3.8-flash'),
+          : 'gemini-2.5-flash'),
     mem0ApiKey,
     visionApiKey: env.VISION_AI_API_KEY,
     visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-3.6-flash',
