@@ -11,9 +11,9 @@
 
 Будь-який текст після `/start` обробляється як повідомлення для розмови.
 
-## Groq
+## AI-провайдер
 
-Бот підтримує Groq через OpenAI-сумісний Chat Completions API. Для запуску додайте секрети Cloudflare:
+Бот за замовчуванням використовує Gemini через API `generateContent`. Для запуску додайте секрети Cloudflare:
 
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
@@ -21,7 +21,7 @@ npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
 npx wrangler secret put AI_API_KEY
 ```
 
-У `wrangler.jsonc` за замовчуванням увімкнено `AI_PROVIDER=groq` і модель `llama-3.1-8b-instant`. За потреби модель можна змінити через `AI_MODEL_NAME`. Groq API key має бути переданий саме через `AI_API_KEY`.
+У `wrangler.jsonc` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-1.5-flash-latest`. Ключ Gemini передається через `AI_API_KEY`. За потреби можна змінити `AI_PROVIDER` на `groq` або `openai` та вказати відповідну модель через `AI_MODEL_NAME`.
 
 
 ## Проактивні повідомлення
