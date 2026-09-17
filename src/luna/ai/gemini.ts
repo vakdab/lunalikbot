@@ -6,12 +6,39 @@ import { AIProvider, AIResponse, ChatMessage, GenerateOptions } from './types';
 export class GeminiProvider implements AIProvider {
   public readonly providerName = 'gemini';
   public readonly modelName: string;
+  private resolvedModelName?: string;
 
   constructor(
     private readonly apiKey: string,
     modelName: string = 'gemini-2.5-flash'
   ) {
     this.modelName = modelName;
+  }
+
+  private async findAvailableModel(): Promise<string | undefined> {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`,
+      { headers: { Accept: 'application/json' } }
+    );
+    if (!response.ok) return undefined;
+
+    const data = await response.json() as {
+      models?: Array<{ name?: string; supportedGenerationMethods?: string[] }>;
+    };
+    const available = (data.models || [])
+      .filter((model) => model.supportedGenerationMethods?.includes('generateContent'))
+      .map((model) => model.name?.replace(/^models\//, ''))
+      .filter((model): model is string => Boolean(model))
+      .filter((model) => model.startsWith('gemini-'));
+
+    const preferred = [
+      this.modelName,
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ];
+    return preferred.find((model) => available.includes(model)) || available[0];
   }
 
   private parseOutput(rawText: string): {
@@ -65,7 +92,6 @@ export class GeminiProvider implements AIProvider {
       };
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
     const contents: any[] = [];
 
     const systemInstruction = options?.systemInstruction
@@ -94,19 +120,32 @@ export class GeminiProvider implements AIProvider {
 
     const startTime = Date.now();
     try {
-      const res = await fetch(url, {
+      const model = this.resolvedModelName || this.modelName;
+      const makeRequest = (modelName: string) => fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.apiKey}`,
+        {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
+        }
+      );
+      let res = await makeRequest(model);
+
+      if (res.status === 404 && !this.resolvedModelName) {
+        const availableModel = await this.findAvailableModel();
+        if (availableModel && availableModel !== model) {
+          this.resolvedModelName = availableModel;
+          res = await makeRequest(availableModel);
+        }
+      }
 
       if (!res.ok) {
         const errText = await res.text();
         Logger.error(
-          `Gemini API error (status ${res.status}, model ${this.modelName}, endpoint v1beta)`,
+          `Gemini API error (status ${res.status}, model ${this.resolvedModelName || this.modelName}, endpoint v1beta)`,
           new Error(errText)
         );
-        throw new AIProviderError(`Gemini API returned status ${res.status} for model ${this.modelName}`);
+        throw new AIProviderError(`Gemini API returned status ${res.status} for model ${this.resolvedModelName || this.modelName}`);
       }
 
       const data: any = await res.json();
