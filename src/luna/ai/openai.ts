@@ -76,7 +76,15 @@ export class OpenAIProvider implements AIProvider {
       if (!res.ok) {
         const err = await res.text();
         Logger.error(`AI API error ${res.status} for ${this.providerName}/${this.modelName}`, new Error(err));
-        throw new AIProviderError(`${this.providerName} API error status ${res.status}`);
+        let detail = '';
+        try {
+          const parsed = JSON.parse(err);
+          detail = String(parsed?.error?.message || parsed?.message || '').trim();
+        } catch {
+          detail = err.replace(/\s+/g, ' ').trim();
+        }
+        const safeDetail = detail.slice(0, 240);
+        throw new AIProviderError(`${this.providerName} API error status ${res.status}${safeDetail ? `: ${safeDetail}` : ''}`);
       }
 
       const data: any = await res.json();
