@@ -76,7 +76,7 @@ export function parseConfig(env: Env): AppConfig {
       (env.AI_PROVIDER === 'openai'
         ? 'gpt-4o-mini'
         : env.AI_PROVIDER === 'groq'
-          ? 'openai/gpt-oss-120b'
+          ? 'llama-3.1-8b-instant'
           : 'gemini-2.5-flash'),
     mem0ApiKey,
     visionApiKey: env.VISION_AI_API_KEY,

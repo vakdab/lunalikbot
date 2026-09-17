@@ -18,7 +18,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "groq",
-    "AI_MODEL_NAME": "openai/gpt-oss-120b",
+    "AI_MODEL_NAME": "llama-3.1-8b-instant",
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
   },
