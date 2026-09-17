@@ -23,6 +23,19 @@ npx wrangler secret put AI_API_KEY
 
 У `wrangler.jsonc` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-2.5-flash`. Ключ Gemini передається через `AI_API_KEY`. За потреби можна змінити `AI_PROVIDER` на `groq` або `openai` та вказати відповідну модель через `AI_MODEL_NAME`.
 
+## Автоматичний деплой
+
+Файл `.github/workflows/deploy.yml` автоматично запускає перевірку TypeScript і `wrangler deploy` після кожного push у гілку `main`. Також workflow можна запустити вручну через GitHub Actions.
+
+У налаштуваннях репозиторію GitHub потрібно один раз додати Actions secrets:
+
+| Secret | Значення |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | API Token із правом `Account > Workers Scripts > Edit` для потрібного Cloudflare-акаунта |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID потрібного Cloudflare-акаунта |
+
+Секрети Telegram і Gemini залишаються Cloudflare Worker secrets та не зберігаються в GitHub.
+
 
 ## Проактивні повідомлення
 
