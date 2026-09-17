@@ -18,7 +18,7 @@ export interface Env {
 
   // Environment Variables
   ENVIRONMENT?: string;
-  AI_PROVIDER?: string; // 'gemini' | 'openai' | 'groq'
+  AI_PROVIDER?: string; // 'puter' | 'gemini' | 'openai' | 'groq'
   AI_MODEL_NAME?: string;
   MEDIA_STORAGE_TYPE?: string; // 'telegram_cache' | 'r2' | 'cdn'
   MEDIA_BASE_URL?: string;
@@ -36,7 +36,7 @@ export interface AppConfig {
   environment: 'development' | 'production' | 'test';
   telegramToken: string;
   webhookSecret?: string;
-  aiProvider: 'gemini' | 'openai' | 'groq';
+  aiProvider: 'puter' | 'gemini' | 'openai' | 'groq';
   aiApiKey: string;
   aiModelName: string;
   mem0ApiKey?: string;
@@ -69,7 +69,7 @@ export function parseConfig(env: Env): AppConfig {
     environment: (env.ENVIRONMENT as any) || 'production',
     telegramToken,
     webhookSecret: env.TELEGRAM_WEBHOOK_SECRET,
-    aiProvider: (env.AI_PROVIDER as any) || 'gemini',
+    aiProvider: (env.AI_PROVIDER as any) || 'puter',
     aiApiKey,
     aiModelName:
       env.AI_MODEL_NAME ||
@@ -77,7 +77,7 @@ export function parseConfig(env: Env): AppConfig {
         ? 'gpt-4o-mini'
         : env.AI_PROVIDER === 'groq'
           ? 'llama-3.1-8b-instant'
-          : 'gemini-3.6-flash'),
+          : 'gemini-3.8-flash'),
     mem0ApiKey,
     visionApiKey: env.VISION_AI_API_KEY,
     visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-3.6-flash',

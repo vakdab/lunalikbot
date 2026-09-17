@@ -7,6 +7,13 @@ import { AppConfig } from '../../config/env';
 export class AIProviderFactory {
   static create(config: AppConfig): AIProvider {
     switch (config.aiProvider) {
+      case 'puter':
+        return new OpenAIProvider(
+          config.aiApiKey,
+          config.aiModelName,
+          'https://api.puter.com/puterai/openai/v1',
+          'puter'
+        );
       case 'openai':
         return new OpenAIProvider(config.aiApiKey, config.aiModelName);
       case 'groq':

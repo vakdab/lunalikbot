@@ -4,15 +4,17 @@ import { LunaEmotion } from '../../media/types';
 import { AIProvider, AIResponse, ChatMessage, GenerateOptions } from './types';
 
 export class OpenAIProvider implements AIProvider {
-  public readonly providerName: string = 'openai';
+  public readonly providerName: string;
   public readonly modelName: string;
 
   constructor(
     private readonly apiKey: string,
     modelName: string = 'gpt-4o-mini',
-    private readonly baseUrl: string = 'https://api.openai.com/v1'
+    private readonly baseUrl: string = 'https://api.openai.com/v1',
+    providerName: string = 'openai'
   ) {
     this.modelName = modelName;
+    this.providerName = providerName;
   }
 
   private parseOutput(rawText: string): { cleanText: string; innerThought?: string; emotion: LunaEmotion } {
