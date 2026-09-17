@@ -3,11 +3,17 @@ import { OpenAIProvider } from './openai';
 import { GroqProvider } from './groq';
 import { AIProvider } from './types';
 import { AppConfig } from '../../config/env';
+import { AIProviderError } from '../../utils/errors';
 
 export class AIProviderFactory {
   static create(config: AppConfig): AIProvider {
     switch (config.aiProvider) {
       case 'puter':
+        if (!config.aiApiKey) {
+          throw new AIProviderError(
+            'Puter requires AI_API_KEY: create a server token in https://puter.com/dashboard and add it as a Cloudflare Worker secret'
+          );
+        }
         return new OpenAIProvider(
           config.aiApiKey,
           config.aiModelName,
