@@ -16,29 +16,34 @@ export class GeminiProvider implements AIProvider {
   }
 
   private async findAvailableModel(): Promise<string | undefined> {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`,
-      { headers: { Accept: 'application/json' } }
-    );
-    if (!response.ok) return undefined;
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!response.ok) return undefined;
 
-    const data = await response.json() as {
-      models?: Array<{ name?: string; supportedGenerationMethods?: string[] }>;
-    };
-    const available = (data.models || [])
-      .filter((model) => model.supportedGenerationMethods?.includes('generateContent'))
-      .map((model) => model.name?.replace(/^models\//, ''))
-      .filter((model): model is string => Boolean(model))
-      .filter((model) => model.startsWith('gemini-'));
+      const data = await response.json() as {
+        models?: Array<{ name?: string; supportedGenerationMethods?: string[] }>;
+      };
+      const available = (data.models || [])
+        .filter((model) => model.supportedGenerationMethods?.includes('generateContent'))
+        .map((model) => model.name?.replace(/^models\//, ''))
+        .filter((model): model is string => Boolean(model))
+        .filter((model) => model.startsWith('gemini-'));
 
-    const preferred = [
-      this.modelName,
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-    ];
-    return preferred.find((model) => available.includes(model)) || available[0];
+      const preferred = [
+        this.modelName,
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+      ];
+      return preferred.find((model) => available.includes(model)) || available[0];
+    } catch (err) {
+      Logger.warn('Gemini models.list failed; will try known model fallbacks', { err });
+      return undefined;
+    }
   }
 
   private parseOutput(rawText: string): {
@@ -133,9 +138,20 @@ export class GeminiProvider implements AIProvider {
 
       if (res.status === 404 && !this.resolvedModelName) {
         const availableModel = await this.findAvailableModel();
-        if (availableModel && availableModel !== model) {
-          this.resolvedModelName = availableModel;
-          res = await makeRequest(availableModel);
+        const fallbackModels = [
+          availableModel,
+          'gemini-2.5-flash-lite',
+          'gemini-2.0-flash',
+          'gemini-1.5-flash',
+        ].filter((candidate, index, candidates): candidate is string =>
+          Boolean(candidate) && candidate !== model && candidates.indexOf(candidate) === index
+        );
+        for (const fallbackModel of fallbackModels) {
+          res = await makeRequest(fallbackModel);
+          if (res.status !== 404) {
+            this.resolvedModelName = fallbackModel;
+            break;
+          }
         }
       }
 
