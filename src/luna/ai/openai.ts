@@ -75,8 +75,8 @@ export class OpenAIProvider implements AIProvider {
 
       if (!res.ok) {
         const err = await res.text();
-        Logger.error(`OpenAI API error ${res.status}`, new Error(err));
-        throw new AIProviderError(`OpenAI API error status ${res.status}`);
+        Logger.error(`AI API error ${res.status} for ${this.providerName}/${this.modelName}`, new Error(err));
+        throw new AIProviderError(`${this.providerName} API error status ${res.status}`);
       }
 
       const data: any = await res.json();
@@ -95,7 +95,7 @@ export class OpenAIProvider implements AIProvider {
       };
     } catch (err) {
       if (err instanceof AIProviderError) throw err;
-      throw new AIProviderError(`OpenAI provider error: ${String(err)}`);
+      throw new AIProviderError(`${this.providerName} provider error: ${String(err)}`);
     }
   }
 }
