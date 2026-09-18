@@ -166,7 +166,17 @@ export class GeminiProvider implements AIProvider {
           `Gemini API error (status ${res.status}, model ${this.resolvedModelName || this.modelName}, endpoint v1beta)`,
           new Error(errText)
         );
-        throw new AIProviderError(`Gemini API returned status ${res.status} for model ${this.resolvedModelName || this.modelName}`);
+        let detail = '';
+        try {
+          const parsed = JSON.parse(errText);
+          detail = String(parsed?.error?.message || parsed?.message || '').trim();
+        } catch {
+          detail = errText.replace(/\s+/g, ' ').trim();
+        }
+        const safeDetail = detail.slice(0, 300);
+        throw new AIProviderError(
+          `Gemini API returned status ${res.status} for model ${this.resolvedModelName || this.modelName}${safeDetail ? `: ${safeDetail}` : ''}`
+        );
       }
 
       const data: any = await res.json();

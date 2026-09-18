@@ -18,12 +18,14 @@
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
-npx wrangler secret put AI_API_KEY
+npx wrangler secret put GEMINI_API_KEY
 ```
 
-У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-2.5-flash`. Створіть безкоштовний ключ у [Google AI Studio](https://aistudio.google.com/apikey) та збережіть його як `AI_API_KEY`. Безкоштовний тариф має обмеження швидкості Google, але не вимагає платної підписки.
+У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-2.5-flash`. Створіть безкоштовний ключ у [Google AI Studio](https://aistudio.google.com/apikey) та збережіть його як `GEMINI_API_KEY`. Безкоштовний тариф має обмеження швидкості Google, але не вимагає платної підписки.
 
-Puter залишається опційним режимом (`AI_PROVIDER=puter`), але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
+Puter залишається опційним режимом (`AI_PROVIDER=puter`) і використовує `AI_API_KEY`, але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
+
+Якщо раніше в `AI_API_KEY` був Puter token, додайте новий секрет саме під назвою `GEMINI_API_KEY`. Код має fallback на `AI_API_KEY` для сумісності, але старий Puter token потрібно замінити або видалити, якщо окремий Gemini secret не додано.
 
 ## Автоматичний деплой
 

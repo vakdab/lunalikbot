@@ -3,6 +3,7 @@ export interface Env {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
   AI_API_KEY: string;
+  GEMINI_API_KEY?: string;
   MEM0_API_KEY?: string;
   MEM0_ORG_ID?: string;
   MEM0_PROJECT_ID?: string;
@@ -58,7 +59,7 @@ export interface AppConfig {
 export function parseConfig(env: Env): AppConfig {
   const telegramToken = env.TELEGRAM_BOT_TOKEN || '';
   const mem0ApiKey = env.MEM0_API_KEY;
-  const aiApiKey = env.AI_API_KEY || '';
+  const aiApiKey = (env.AI_PROVIDER === 'gemini' ? env.GEMINI_API_KEY || env.AI_API_KEY : env.AI_API_KEY) || '';
 
   const adminIds = (env.ADMIN_USER_IDS || '')
     .split(',')
