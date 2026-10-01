@@ -49,6 +49,27 @@ export default {
       return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups + natural reminders' });
     }
 
+    if (request.method === 'GET' && url.pathname === '/__repair-webhook-once') {
+      const token = env.TELEGRAM_BOT_TOKEN || '';
+      if (!token) return Response.json({ ok: false }, { status: 503 });
+      const webhookUrl = 'https://lunalikbot.vakdabpro.workers.dev/';
+      const body = new URLSearchParams({ url: webhookUrl });
+      if (env.TELEGRAM_WEBHOOK_SECRET) body.set('secret_token', env.TELEGRAM_WEBHOOK_SECRET);
+      const setResponse = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      const setResult = await setResponse.json() as { ok?: boolean; description?: string };
+      const infoResponse = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`, { headers: { Accept: 'application/json' } });
+      const info = await infoResponse.json() as { ok?: boolean; result?: Record<string, unknown> };
+      return Response.json({
+        setWebhookOk: setResult.ok === true,
+        error: setResult.ok === true ? undefined : setResult.description,
+        webhook: info.result,
+      });
+    }
+
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const secretHeader = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
