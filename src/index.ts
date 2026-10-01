@@ -49,6 +49,45 @@ export default {
       return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups + natural reminders' });
     }
 
+    // Temporary operator diagnostic. It never returns the bot token or secret value.
+    if (request.method === 'GET' && url.pathname === '/__luna-diagnostics/webhook') {
+      const token = env.TELEGRAM_BOT_TOKEN || '';
+      if (!token) return Response.json({ ok: false, error: 'TELEGRAM_BOT_TOKEN is not configured' }, { status: 503 });
+
+      const telegramUrl = `https://api.telegram.org/bot${token}/getWebhookInfo`;
+      const beforeResponse = await fetch(telegramUrl, { headers: { Accept: 'application/json' } });
+      const before = await beforeResponse.json() as { ok?: boolean; result?: Record<string, unknown>; description?: string };
+      let repair: Record<string, unknown> | undefined;
+
+      if (url.searchParams.get('repair') === '1') {
+        const webhookUrl = `${url.origin}/`;
+        const body = new URLSearchParams({ url: webhookUrl });
+        if (env.TELEGRAM_WEBHOOK_SECRET) body.set('secret_token', env.TELEGRAM_WEBHOOK_SECRET);
+        const setResponse = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        });
+        const setResult = await setResponse.json() as { ok?: boolean; description?: string };
+        const afterResponse = await fetch(telegramUrl, { headers: { Accept: 'application/json' } });
+        const after = await afterResponse.json() as { ok?: boolean; result?: Record<string, unknown>; description?: string };
+        repair = {
+          setWebhookOk: setResult.ok === true,
+          setWebhookError: setResult.ok === true ? undefined : setResult.description,
+          webhook: after.result,
+          webhookError: after.ok === true ? undefined : after.description,
+        };
+      }
+
+      return Response.json({
+        ok: before.ok === true,
+        workerSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET),
+        webhook: before.result,
+        webhookError: before.ok === true ? undefined : before.description,
+        repair,
+      });
+    }
+
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const secretHeader = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
