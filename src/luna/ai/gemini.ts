@@ -32,12 +32,13 @@ export class GeminiProvider implements AIProvider {
         .filter((model): model is string => Boolean(model))
         .filter((model) => model.startsWith('gemini-'));
 
+      // Only return a model explicitly advertised by this API key/project.
+      // Never guess legacy model names: availability differs by project and region.
       const preferred = [
         this.modelName,
         'gemini-2.5-flash',
         'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
       ];
       return preferred.find((model) => available.includes(model)) || available[0];
     } catch (err) {
@@ -138,20 +139,10 @@ export class GeminiProvider implements AIProvider {
 
       if (res.status === 404 && !this.resolvedModelName) {
         const availableModel = await this.findAvailableModel();
-        const fallbackModels = [
-          availableModel,
-          'gemini-2.5-flash',
-          'gemini-2.5-flash-lite',
-          'gemini-2.0-flash',
-          'gemini-1.5-flash',
-        ].filter((candidate, index, candidates): candidate is string =>
-          Boolean(candidate) && candidate !== model && candidates.indexOf(candidate) === index
-        );
-        for (const fallbackModel of fallbackModels) {
-          res = await makeRequest(fallbackModel);
-          if (res.status !== 404) {
-            this.resolvedModelName = fallbackModel;
-            break;
+        if (availableModel && availableModel !== model) {
+          res = await makeRequest(availableModel);
+          if (res.ok || res.status !== 404) {
+            this.resolvedModelName = availableModel;
           }
         }
       }
