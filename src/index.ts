@@ -49,29 +49,6 @@ export default {
       return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups + natural reminders' });
     }
 
-    if (request.method === 'GET' && url.pathname === '/__groq-model-check-8f3c2a') {
-      const key = env.GROQ_API_KEY || env.AI_API_KEY || '';
-      if (!key) return Response.json({ ok: false, error: 'GROQ_API_KEY is not configured' }, { status: 503 });
-      const modelsResponse = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      if (!modelsResponse.ok) return Response.json({ ok: false, error: `models_${modelsResponse.status}` }, { status: 502 });
-      const models = await modelsResponse.json() as { data?: Array<{ id?: string }> };
-      const candidates = (models.data || [])
-        .map((model) => model.id)
-        .filter((model): model is string => Boolean(model))
-        .filter((model) => !/(whisper|guard|tts|speech|safeguard)/i.test(model));
-      for (const model of candidates) {
-        const probe = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with OK.' }], max_tokens: 2 }),
-        });
-        if (probe.ok) return Response.json({ ok: true, model });
-      }
-      return Response.json({ ok: false, error: 'No accessible chat model found' }, { status: 502 });
-    }
-
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const secretHeader = request.headers.get('X-Telegram-Bot-Api-Secret-Token');

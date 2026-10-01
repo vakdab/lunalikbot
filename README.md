@@ -20,7 +20,7 @@ npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put GROQ_API_KEY
 ```
 
-У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=groq` і модель `llama-3.1-8b-instant`. Створіть API key у [Groq Console](https://console.groq.com/keys) та збережіть його як `GROQ_API_KEY`.
+У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=groq` і підтверджену модель `openai/gpt-oss-120b`. Створіть API key у [Groq Console](https://console.groq.com/keys) та збережіть його як `GROQ_API_KEY`.
 
 Puter залишається опційним режимом (`AI_PROVIDER=puter`) і використовує `AI_API_KEY`, але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
 
