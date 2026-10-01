@@ -10,7 +10,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor(
     private readonly apiKey: string,
-    modelName: string = 'gemini-3.6-flash'
+    modelName: string = 'gemini-2.5-flash'
   ) {
     this.modelName = modelName;
   }
@@ -34,9 +34,7 @@ export class GeminiProvider implements AIProvider {
 
       const preferred = [
         this.modelName,
-        'gemini-3.6-flash',
-        'gemini-3.5-flash',
-        'gemini-3.5-flash-lite',
+        'gemini-2.5-flash',
         'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
@@ -93,8 +91,8 @@ export class GeminiProvider implements AIProvider {
   async generateResponse(messages: ChatMessage[], options?: GenerateOptions): Promise<AIResponse> {
     if (!this.apiKey) {
       return {
-        text: '🌙 <i>Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>AI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).</i> [EMOTION:idle]',
-        cleanText: '🌙 Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>AI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).',
+        text: '🌙 <i>Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>GEMINI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).</i> [EMOTION:idle]',
+        cleanText: '🌙 Привіт! Я Луна. Щоб активувати мій інтелект та памʼять, додайте будь ласка <b>GEMINI_API_KEY</b> у налаштуваннях Cloudflare Secrets (Settings ➔ Variables and Secrets).',
         detectedEmotion: 'idle',
       };
     }
@@ -142,9 +140,7 @@ export class GeminiProvider implements AIProvider {
         const availableModel = await this.findAvailableModel();
         const fallbackModels = [
           availableModel,
-          'gemini-3.6-flash',
-          'gemini-3.5-flash',
-          'gemini-3.5-flash-lite',
+          'gemini-2.5-flash',
           'gemini-2.5-flash-lite',
           'gemini-2.0-flash',
           'gemini-1.5-flash',

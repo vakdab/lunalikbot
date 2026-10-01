@@ -81,7 +81,7 @@ export function parseConfig(env: Env): AppConfig {
           : 'gemini-2.5-flash'),
     mem0ApiKey,
     visionApiKey: env.VISION_AI_API_KEY,
-    visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-3.6-flash',
+    visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-2.5-flash',
     toolsUrl: env.AI_TOOLS_URL,
     toolsSecret: env.AI_TOOLS_SECRET,
     searchApiKey: env.SEARCH_API_KEY,
