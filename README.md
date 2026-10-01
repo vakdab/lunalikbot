@@ -29,16 +29,11 @@ Puter залишається опційним режимом (`AI_PROVIDER=puter
 
 ## Автоматичний деплой
 
-Файл `.github/workflows/deploy.yml` автоматично запускає перевірку TypeScript і `wrangler deploy` після кожного push у гілку `main`. Також workflow можна запустити вручну через GitHub Actions.
+Cloudflare Worker підключений до цього GitHub-репозиторію безпосередньо через Cloudflare Git integration. Після push у `main` Cloudflare сам забирає репозиторій і деплоїть Worker за конфігурацією з `wrangler.json`.
 
-У налаштуваннях репозиторію GitHub потрібно один раз додати Actions secrets:
+GitHub Actions не виконує Cloudflare deploy і не потребує `CLOUDFLARE_API_TOKEN` або `CLOUDFLARE_ACCOUNT_ID`. Workflow `.github/workflows/typecheck.yml` запускає лише `npm run typecheck` для перевірки коду.
 
-| Secret | Значення |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | API Token із правом `Account > Workers Scripts > Edit` для потрібного Cloudflare-акаунта |
-| `CLOUDFLARE_ACCOUNT_ID` | Account ID потрібного Cloudflare-акаунта |
-
-Секрети Telegram і Gemini залишаються Cloudflare Worker secrets та не зберігаються в GitHub.
+Секрети Telegram і Gemini залишаються Cloudflare Worker Secrets/Variables та не зберігаються в GitHub.
 
 
 ## Проактивні повідомлення
