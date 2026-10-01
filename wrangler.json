@@ -18,7 +18,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "AI_PROVIDER": "gemini",
-    "AI_MODEL_NAME": "gemini-2.5-flash",
+    "AI_MODEL_NAME": "gemini-3.8-flash",
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
   },
