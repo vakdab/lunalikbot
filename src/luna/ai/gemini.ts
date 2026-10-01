@@ -15,13 +15,13 @@ export class GeminiProvider implements AIProvider {
     this.modelName = modelName;
   }
 
-  private async findAvailableModel(): Promise<string | undefined> {
+  private async findAvailableModels(): Promise<string[]> {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`,
         { headers: { Accept: 'application/json' } }
       );
-      if (!response.ok) return undefined;
+      if (!response.ok) return [];
 
       const data = await response.json() as {
         models?: Array<{ name?: string; supportedGenerationMethods?: string[] }>;
@@ -40,10 +40,10 @@ export class GeminiProvider implements AIProvider {
         'gemini-3.8-flash-lite',
         'gemini-2.0-flash',
       ];
-      return preferred.find((model) => available.includes(model)) || available[0];
+      return [...preferred.filter((model) => available.includes(model)), ...available.filter((model) => !preferred.includes(model))];
     } catch (err) {
-      Logger.warn('Gemini models.list failed; will try known model fallbacks', { err });
-      return undefined;
+      Logger.warn('Gemini models.list failed; no dynamic model fallback available', { err });
+      return [];
     }
   }
 
@@ -137,12 +137,14 @@ export class GeminiProvider implements AIProvider {
       );
       let res = await makeRequest(model);
 
-      if (res.status === 404 && !this.resolvedModelName) {
-        const availableModel = await this.findAvailableModel();
-        if (availableModel && availableModel !== model) {
+      if ((res.status === 403 || res.status === 404) && !this.resolvedModelName) {
+        const availableModels = await this.findAvailableModels();
+        for (const availableModel of availableModels) {
+          if (availableModel === model) continue;
           res = await makeRequest(availableModel);
-          if (res.ok || res.status !== 404) {
+          if (res.ok) {
             this.resolvedModelName = availableModel;
+            break;
           }
         }
       }
