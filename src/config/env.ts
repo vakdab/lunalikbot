@@ -2,7 +2,7 @@ export interface Env {
   // Secrets
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
-  AI_API_KEY: string;
+  AI_API_KEY?: string;
   GEMINI_API_KEY?: string;
   MEM0_API_KEY?: string;
   MEM0_ORG_ID?: string;
