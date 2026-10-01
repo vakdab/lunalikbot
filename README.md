@@ -13,19 +13,18 @@
 
 ## AI-провайдер
 
-Бот за замовчуванням використовує Gemini API з безкоштовним тарифом Google AI Studio. Це серверний Telegram-бот, тому він не може використати браузерну сесію `puter.js` користувача. Для запуску додайте секрети Cloudflare:
+Бот за замовчуванням використовує Groq Chat Completions API. Це серверний Telegram-бот, тому він не може використати браузерну сесію `puter.js` користувача. Для запуску додайте секрети Cloudflare:
 
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
-npx wrangler secret put GEMINI_API_KEY
+npx wrangler secret put GROQ_API_KEY
 ```
 
-У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=gemini` і модель `gemini-2.5-flash`. Створіть безкоштовний ключ у [Google AI Studio](https://aistudio.google.com/apikey) та збережіть його як `GEMINI_API_KEY`. Безкоштовний тариф має обмеження швидкості Google, але не вимагає платної підписки.
+У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=groq` і модель `llama-3.1-8b-instant`. Створіть API key у [Groq Console](https://console.groq.com/keys) та збережіть його як `GROQ_API_KEY`.
 
 Puter залишається опційним режимом (`AI_PROVIDER=puter`) і використовує `AI_API_KEY`, але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
 
-Якщо раніше в `AI_API_KEY` був Puter token, додайте новий секрет саме під назвою `GEMINI_API_KEY`. Код має fallback на `AI_API_KEY` для сумісності, але старий Puter token потрібно замінити або видалити, якщо окремий Gemini secret не додано.
+Для Groq використовуйте саме `GROQ_API_KEY`; код має fallback на `AI_API_KEY` лише для сумісності зі старими конфігураціями.
 
 ## Автоматичний деплой
 
@@ -33,7 +32,7 @@ Cloudflare Worker підключений до цього GitHub-репозито
 
 GitHub Actions не виконує Cloudflare deploy і не потребує `CLOUDFLARE_API_TOKEN` або `CLOUDFLARE_ACCOUNT_ID`. Workflow `.github/workflows/typecheck.yml` запускає лише `npm run typecheck` для перевірки коду.
 
-Секрети Telegram і Gemini залишаються Cloudflare Worker Secrets/Variables та не зберігаються в GitHub.
+Секрети Telegram і Groq залишаються Cloudflare Worker Secrets/Variables та не зберігаються в GitHub.
 
 
 ## Проактивні повідомлення

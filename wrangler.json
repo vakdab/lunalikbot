@@ -17,8 +17,8 @@
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    "AI_PROVIDER": "gemini",
-    "AI_MODEL_NAME": "gemini-3.8-flash",
+    "AI_PROVIDER": "groq",
+    "AI_MODEL_NAME": "llama-3.1-8b-instant",
     "MEDIA_STORAGE_TYPE": "telegram_cache",
     "RATE_LIMIT_PER_MINUTE": 30
   },
