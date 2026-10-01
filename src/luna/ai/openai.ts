@@ -8,13 +8,17 @@ export class OpenAIProvider implements AIProvider {
   public readonly modelName: string;
 
   constructor(
-    private readonly apiKey: string,
+    protected readonly apiKey: string,
     modelName: string = 'gpt-4o-mini',
     private readonly baseUrl: string = 'https://api.openai.com/v1',
     providerName: string = 'openai'
   ) {
     this.modelName = modelName;
     this.providerName = providerName;
+  }
+
+  protected async getFallbackModels(): Promise<string[]> {
+    return [];
   }
 
   private parseOutput(rawText: string): { cleanText: string; innerThought?: string; emotion: LunaEmotion } {
@@ -61,23 +65,38 @@ export class OpenAIProvider implements AIProvider {
     formattedMessages.push(...messages);
 
     try {
-      const res = await fetch(url, {
+      const makeRequest = (model: string) => fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: this.modelName,
+          model,
           messages: formattedMessages,
           temperature: options?.temperature ?? 0.8,
           max_tokens: options?.maxTokens ?? 900,
         }),
       });
+      let activeModel = this.modelName;
+      let res = await makeRequest(activeModel);
+
+      if (res.status === 403 || res.status === 404) {
+        const fallbackModels = await this.getFallbackModels();
+        for (const fallbackModel of fallbackModels) {
+          if (fallbackModel === activeModel) continue;
+          const fallbackResponse = await makeRequest(fallbackModel);
+          if (fallbackResponse.ok) {
+            activeModel = fallbackModel;
+            res = fallbackResponse;
+            break;
+          }
+        }
+      }
 
       if (!res.ok) {
         const err = await res.text();
-        Logger.error(`AI API error ${res.status} for ${this.providerName}/${this.modelName}`, new Error(err));
+        Logger.error(`AI API error ${res.status} for ${this.providerName}/${activeModel}`, new Error(err));
         let detail = '';
         try {
           const parsed = JSON.parse(err);
@@ -86,7 +105,7 @@ export class OpenAIProvider implements AIProvider {
           detail = err.replace(/\s+/g, ' ').trim();
         }
         const safeDetail = detail.slice(0, 240);
-        throw new AIProviderError(`${this.providerName} API error status ${res.status}${safeDetail ? `: ${safeDetail}` : ''}`);
+        throw new AIProviderError(`${this.providerName} API error status ${res.status} for model ${activeModel}${safeDetail ? `: ${safeDetail}` : ''}`);
       }
 
       const data: any = await res.json();
