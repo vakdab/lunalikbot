@@ -65,12 +65,12 @@ export class LunaCompanion {
     if (!from || !message.text) return;
 
     const user = await this.userRepo.getOrCreate(from);
-    const recentHistory = await this.history.get(message.chat.id, from.id);
+    const conversation = await this.history.getContext(message.chat.id, from.id);
     await this.telegram.sendChatAction(message.chat.id, 'typing');
 
     let relevantMemories: string[] = [];
     try {
-      relevantMemories = await this.memory.getRelevantMemories(user.id, message.text, 6);
+      relevantMemories = await this.memory.getRelevantMemories(user.id, message.text, 8);
     } catch (err) {
       Logger.warn(`Memory retrieval failed for user ${user.id}`, { err });
     }
@@ -92,7 +92,8 @@ export class LunaCompanion {
         user,
         userMessage: message.text,
         relevantMemories,
-        recentHistory,
+        conversationSummary: conversation.summary,
+        recentHistory: conversation.turns,
         intent,
         searchContext,
       });
@@ -100,7 +101,8 @@ export class LunaCompanion {
       const replyText = response.cleanText.trim() || 'Хвилинку… не знайшла слів, але я тут з тобою.';
       await this.telegram.sendMessage(message.chat.id, escapeHtml(replyText));
 
-      // Memory is automatic and never blocks the reply.
+      // Both stores are non-blocking, so Telegram replies stay fast even when
+      // Mem0 is slow or temporarily unavailable.
       ctx.executionCtx.waitUntil(Promise.all([
         this.memory.saveExchange(user.id, message.text, replyText).catch(err =>
           Logger.error('Automatic memory save failed', err)
