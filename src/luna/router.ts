@@ -30,7 +30,7 @@ export class IntentRouter {
     if (/(контрольн|самостійн|варіант\s*\d|гдз|домашн|завдан|підручник|клас|алгебр|геометр|фізик|хімі|біолог)/.test(value)) {
       return { intent: /(контрольн|самостійн|варіант)/.test(value) ? 'CONTROL_WORK' : 'SCHOOL_TASK', confidence: 'medium' };
     }
-    if (/(знайди|пошукай|пошук|в інтернеті|джерел|сайт|новин)/.test(value)) {
+    if (/(знайди|пошукай|пошук|в інтернеті|джерел|сайт|новин|сьогодні|зараз|актуальн|останні|ціна|вартість|курс|реліз|версія|github|репозитор|технологі|новинка|що відбувається)/.test(value)) {
       return { intent: 'WEB_SEARCH', confidence: 'medium' };
     }
     return { intent: 'GENERAL_CHAT', confidence: 'low' };

@@ -18,6 +18,7 @@ import { ConversationHistory } from './luna/history';
 import { LunaToolService } from './luna/tools';
 import { SerpApiSearchService } from './luna/search';
 import { getRolivWeather, isWeatherRequest } from './weather';
+import { LunaStateService } from './luna/state';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -60,7 +61,8 @@ export default {
       const config = parseConfig(env);
       const telegram = new TelegramApi(config.telegramToken);
       const kvStorage = new KVStorage(env.LUNA_KV);
-      const proactive = new ProactiveService(kvStorage, telegram);
+      const state = new LunaStateService(kvStorage);
+      const proactive = new ProactiveService(kvStorage, telegram, state);
       const reminders = new ReminderService(kvStorage, telegram);
       const groups = new GroupService(telegram);
       const userRepo = new UserRepository(new D1Client(env.DB), kvStorage);
@@ -80,7 +82,7 @@ export default {
         googleDomain: config.searchGoogleDomain,
       });
       const aiProvider = AIProviderFactory.create(config);
-      const luna = new LunaCompanion(telegram, userRepo, memory, history, tools, search, aiProvider);
+      const luna = new LunaCompanion(telegram, userRepo, memory, history, state, tools, search, aiProvider);
       const update: TelegramUpdate = await request.json();
       const message = update.message;
 
@@ -92,6 +94,43 @@ export default {
 
       if (message.chat.type === 'private') {
         await proactive.touch(message.from.id, message.chat.id, message.from.first_name);
+      }
+
+      // Privacy and behavior controls stay inside the existing Telegram webhook.
+      if (message.chat.type === 'private' && message.text) {
+        const command = message.text.trim();
+        if (/^\/memory(?:@\w+)?$/i.test(command)) {
+          const memories = await state.listMemories(message.from.id);
+          if (!memories.length) {
+            await telegram.sendMessage(message.chat.id, 'У мене поки немає збережених довготривалих фактів про тебе.');
+          } else {
+            const lines = memories.slice(0, 20).map((memory, index) => `${index + 1}. [${memory.id}] ${escapeHtml(memory.content)}`);
+            await telegram.sendMessage(message.chat.id, `<b>Моя памʼять про тебе:</b>\n${lines.join('\n')}\n\nЩоб видалити все: /memory_clear`);
+          }
+          return new Response('OK');
+        }
+        if (/^\/memory_clear(?:@\w+)?$/i.test(command)) {
+          await state.clearMemories(message.from.id);
+          await memory.saver.clearUserMemories(message.from.id);
+          await telegram.sendMessage(message.chat.id, 'Готово. Довготривалу памʼять про тебе очищено.');
+          return new Response('OK');
+        }
+        const deleteMatch = command.match(/^\/memory_delete(?:@\w+)?\s+([a-f0-9-]+)$/i);
+        if (deleteMatch) {
+          const deleted = await state.deleteMemory(message.from.id, deleteMatch[1]);
+          await telegram.sendMessage(message.chat.id, deleted ? 'Цей спогад видалено.' : 'Не знайшла такого локального спогаду.');
+          return new Response('OK');
+        }
+        if (/^\/proactive_off(?:@\w+)?$/i.test(command)) {
+          await state.setProactiveEnabled(message.from.id, false);
+          await telegram.sendMessage(message.chat.id, 'Проактивні повідомлення вимкнено.');
+          return new Response('OK');
+        }
+        if (/^\/proactive_on(?:@\w+)?$/i.test(command)) {
+          await state.setProactiveEnabled(message.from.id, true);
+          await telegram.sendMessage(message.chat.id, 'Проактивні повідомлення увімкнено.');
+          return new Response('OK');
+        }
       }
 
       // Weather is a deterministic public command and should not spend an AI request.
@@ -202,12 +241,14 @@ export default {
       const config = parseConfig(env);
       const telegram = new TelegramApi(config.telegramToken);
       const kvStorage = new KVStorage(env.LUNA_KV);
-      const proactive = new ProactiveService(kvStorage, telegram);
+      const state = new LunaStateService(kvStorage);
+      const proactive = new ProactiveService(kvStorage, telegram, state);
       const reminders = new ReminderService(kvStorage, telegram);
       const groups = new GroupService(telegram);
       executionCtx.waitUntil(Promise.all([
         proactive.sendDueFollowUps(),
         reminders.sendDueReminders(),
+        state.consolidateAll(),
       ]).then(([followUps, dueReminders]) =>
         Logger.info(`Scheduled scan completed: ${followUps} follow-up(s), ${dueReminders} reminder(s) sent`)
       ));

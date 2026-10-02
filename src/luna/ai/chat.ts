@@ -3,12 +3,15 @@ import { UserProfile } from '../../database/types';
 import { AIProvider, AIResponse } from './types';
 import { Logger } from '../../utils/logger';
 import { IntentResult } from '../router';
+import { EmotionalState, PersonalityState } from '../state';
 
 export interface LunaConversationContext {
   user: UserProfile;
   userMessage: string;
   relevantMemories?: string[];
   conversationSummary?: string;
+  emotionalState?: EmotionalState;
+  personalityState?: PersonalityState;
   recentHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
   intent?: IntentResult;
   searchContext?: string;
@@ -23,6 +26,8 @@ export class LunaChatService {
       userMessage,
       relevantMemories,
       conversationSummary,
+      emotionalState,
+      personalityState,
       recentHistory = [],
       intent,
       searchContext,
@@ -41,14 +46,14 @@ export class LunaChatService {
       user,
       relevantMemories,
       conversationSummary,
+      emotionalState,
+      personalityState,
       currentTimeString: timeString,
       timeOfDayGreeting: greeting,
       intent: intent?.intent,
       searchContext,
     });
 
-    // Keep a long, useful window instead of only the last four messages. The
-    // history service already bounds the total size before it reaches here.
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = recentHistory.slice(-24);
     messages.push({ role: 'user', content: userMessage });
 
