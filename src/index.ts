@@ -49,6 +49,29 @@ export default {
       return Response.json({ status: 'ok', bot: 'Lunalik', mode: 'chat + automatic memory + proactive follow-ups + natural reminders' });
     }
 
+    if (request.method === 'GET' && url.pathname === '/__mem0-check-4e91b7') {
+      const key = env.MEM0_API_KEY;
+      if (!key) return Response.json({ ok: false, error: 'MEM0_API_KEY is not configured' }, { status: 503 });
+      try {
+        const response = await fetch('https://api.mem0.ai/v3/memories/search/', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `Token ${key}`,
+          },
+          body: JSON.stringify({
+            query: 'memory health check',
+            filters: { AND: [{ user_id: 'system-healthcheck' }, { agent_id: 'luna' }] },
+            top_k: 1,
+          }),
+        });
+        return Response.json({ ok: response.ok, status: response.status }, { status: response.ok ? 200 : 502 });
+      } catch {
+        return Response.json({ ok: false, error: 'Mem0 request failed' }, { status: 502 });
+      }
+    }
+
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const secretHeader = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
