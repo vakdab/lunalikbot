@@ -18,6 +18,7 @@
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put MEM0_API_KEY
 ```
 
 У `wrangler.json` за замовчуванням увімкнено `AI_PROVIDER=groq` і підтверджену модель `openai/gpt-oss-120b`. Створіть API key у [Groq Console](https://console.groq.com/keys) та збережіть його як `GROQ_API_KEY`.
@@ -25,6 +26,21 @@ npx wrangler secret put GROQ_API_KEY
 Puter залишається опційним режимом (`AI_PROVIDER=puter`) і використовує `AI_API_KEY`, але його серверний endpoint вимагає платний/активний Puter subscription для такого виклику та повертає `402 subscription required`. Інструкція [Free, Unlimited Gemini API](https://developer.puter.com/tutorials/free-gemini-api/) стосується браузерного `puter.ai.chat()` із сесією користувача, а не Telegram Worker. Для цього бота використовуйте прямий Gemini режим.
 
 Для Groq використовуйте саме `GROQ_API_KEY`; код має fallback на `AI_API_KEY` лише для сумісності зі старими конфігураціями.
+
+## Персональна довгострокова пам’ять
+
+Пам’ять інтегрована через [Mem0](https://github.com/mem0ai/mem0). Для кожного Telegram-користувача Worker використовує окремий Mem0 `user_id` і `agent_id=luna`, тому спогади різних користувачів не змішуються. Після кожного діалогу важливі факти зберігаються асинхронно, а перед новою відповіддю релевантні спогади додаються до контексту Luna.
+
+Потрібен лише Cloudflare Worker Secret `MEM0_API_KEY`; його не треба додавати в GitHub. Якщо secret відсутній або Mem0 тимчасово недоступний, бот безпечно використовує короткий KV fallback і не зупиняє відповіді.
+
+Опційні Mem0 secrets для окремого workspace:
+
+```text
+MEM0_ORG_ID
+MEM0_PROJECT_ID
+```
+
+Вони не потрібні для базової персональної пам’яті.
 
 ## Автоматичний деплой
 
