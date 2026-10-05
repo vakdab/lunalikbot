@@ -13,6 +13,7 @@ import { LunaToolService } from '../tools';
 import { IntentRouter } from '../router';
 import { SerpApiSearchService } from '../search';
 import { LunaStateService } from '../state';
+import { TencentMemoryService } from '../tencent-memory';
 
 export class LunaCompanion {
   private readonly chatService: LunaChatService;
@@ -24,6 +25,7 @@ export class LunaCompanion {
     private readonly memory: MemoryService,
     private readonly history: ConversationHistory,
     private readonly state: LunaStateService,
+    private readonly tencentMemory: TencentMemoryService,
     private readonly tools: LunaToolService,
     private readonly search: SerpApiSearchService,
     private readonly aiProvider: AIProvider
@@ -62,15 +64,18 @@ export class LunaCompanion {
   async handleUserMessage(message: TelegramMessage, ctx: AppContext): Promise<void> {
     const from = message.from;
     if (!from || !message.text) return;
+    const userText = message.text;
 
     const user = await this.userRepo.getOrCreate(from);
     const [conversation, localMemories, remoteMemories, profile] = await Promise.all([
       this.history.getContext(message.chat.id, from.id),
       this.state.getRelevantMemories(user.id, message.text, 8),
-      this.memory.getRelevantMemories(user.id, message.text, 8).catch(err => {
-        Logger.warn(`Memory retrieval failed for user ${user.id}`, { err });
-        return [] as string[];
-      }),
+      this.tencentMemory.isConfigured
+        ? this.tencentMemory.recall(user.id, message.text, 8)
+        : this.memory.getRelevantMemories(user.id, message.text, 8).catch(err => {
+          Logger.warn(`Memory retrieval failed for user ${user.id}`, { err });
+          return [] as string[];
+        }),
       this.state.get(user.id),
     ]);
     await this.telegram.sendChatAction(message.chat.id, 'typing');
@@ -110,12 +115,15 @@ export class LunaCompanion {
 
       const memorySignal = /(мене звати|моє ім'я|люблю|подобається|не люблю|мій проєкт|мій проект|працюю над|хочу|планую|моя ціль|зазвичай|називай мене|звертайся до мене)/i.test(message.text);
       const periodicMemoryCheckpoint = profile.personality.interactionCount > 0 && profile.personality.interactionCount % 5 === 0;
+      const capture = this.tencentMemory.captureTurn(user.id, message.chat.id, message.text, replyText);
       ctx.executionCtx.waitUntil(Promise.all([
-        // Mem0 remains the semantic long-term store. It is called for explicit
-        // memory signals or periodic checkpoints, not for every chat message.
-        ...(memorySignal || periodicMemoryCheckpoint
-          ? [this.memory.saveExchange(user.id, message.text, replyText).catch(err => Logger.error('Automatic memory save failed', err))]
-          : []),
+        // Tencent MemoryCore is the primary L0/L1 pipeline when configured.
+        // Mem0 remains a safe fallback for installations that have not deployed
+        // the external MemoryCore gateway yet.
+        capture.then((captured) => {
+          if (captured || (!memorySignal && !periodicMemoryCheckpoint)) return;
+          return this.memory.saveExchange(user.id, userText, replyText);
+        }).catch(err => Logger.error('Long-term memory capture failed', err)),
         this.history.append(message.chat.id, from.id, message.text, replyText).catch(err => Logger.error('Conversation history save failed', err)),
         this.state.recordTurn(user.id, message.text, response.detectedEmotion).catch(err => Logger.error('State update failed', err)),
       ]));

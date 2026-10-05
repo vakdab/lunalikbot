@@ -90,3 +90,25 @@ Telegram надсилає повідомлення з `parse_mode: HTML` за з
 - Пошук запускається тільки для запитів із ознаками актуальності, новин, цін, GitHub, технологій або явного прохання пошукати.
 
 Додаткових environment variables не потрібно. Потрібні вже наявні `LUNA_KV`, `MEM0_API_KEY` для віддаленої семантичної памʼяті та `SEARCH_API_KEY` для web search. Без Mem0 або SerpAPI бот продовжує працювати на локальному KV і звичайному діалозі.
+
+## TencentDB Agent Memory integration
+
+Lunalik can optionally use the external TencentDB Agent Memory `MemoryCore` gateway as its primary long-term memory pipeline. The Worker does not embed the Node.js MemoryCore runtime. It connects to the gateway over its v3 HTTP data plane:
+
+- `/v3/conversation/add` receives completed Telegram turns as L0 conversation data.
+- `/v3/atomic/search` retrieves relevant L1 memories before a reply.
+- `/v3/conversation/delete` clears the current Telegram session when the user runs `/memory_clear`.
+- Team, Agent and Telegram user isolation IDs are sent on every request.
+- KV state and Mem0 remain graceful fallbacks when TencentDB is not configured or temporarily unavailable.
+
+Required Worker secrets/variables when enabling TencentDB:
+
+```env
+TENCENT_MEMORY_ENDPOINT=https://your-memorycore.example.com
+TENCENT_MEMORY_API_KEY=...
+TENCENT_MEMORY_SERVICE_ID=lunalik-production
+TENCENT_MEMORY_TEAM_ID=...
+TENCENT_MEMORY_AGENT_ID=...
+```
+
+MemoryCore itself must be deployed separately because it requires Node.js 22.16+ and a persistent SQLite/local storage volume. Configure its own LLM credentials and gateway API key according to TencentDB Agent Memory's `MemoryCore/tdai-gateway.standalone.yaml`. The Lunalik Worker only needs the HTTP endpoint and the five TencentDB identifiers above.

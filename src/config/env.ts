@@ -8,6 +8,11 @@ export interface Env {
   MEM0_API_KEY?: string;
   MEM0_ORG_ID?: string;
   MEM0_PROJECT_ID?: string;
+  TENCENT_MEMORY_API_KEY?: string;
+  TENCENT_MEMORY_ENDPOINT?: string;
+  TENCENT_MEMORY_SERVICE_ID?: string;
+  TENCENT_MEMORY_TEAM_ID?: string;
+  TENCENT_MEMORY_AGENT_ID?: string;
   VISION_AI_API_KEY?: string;
   VISION_AI_MODEL_NAME?: string;
   AI_TOOLS_URL?: string;
@@ -42,6 +47,11 @@ export interface AppConfig {
   aiApiKey: string;
   aiModelName: string;
   mem0ApiKey?: string;
+  tencentMemoryEndpoint?: string;
+  tencentMemoryApiKey?: string;
+  tencentMemoryServiceId?: string;
+  tencentMemoryTeamId?: string;
+  tencentMemoryAgentId?: string;
   visionApiKey?: string;
   visionModelName: string;
   toolsUrl?: string;
@@ -85,8 +95,13 @@ export function parseConfig(env: Env): AppConfig {
         ? 'gpt-4o-mini'
         : env.AI_PROVIDER === 'groq'
           ? 'llama-3.1-8b-instant'
-        : 'gemini-3.8-flash'),
+          : 'gemini-3.8-flash'),
     mem0ApiKey,
+    tencentMemoryEndpoint: env.TENCENT_MEMORY_ENDPOINT,
+    tencentMemoryApiKey: env.TENCENT_MEMORY_API_KEY,
+    tencentMemoryServiceId: env.TENCENT_MEMORY_SERVICE_ID,
+    tencentMemoryTeamId: env.TENCENT_MEMORY_TEAM_ID,
+    tencentMemoryAgentId: env.TENCENT_MEMORY_AGENT_ID,
     visionApiKey: env.VISION_AI_API_KEY,
     visionModelName: env.VISION_AI_MODEL_NAME || 'gemini-3.8-flash',
     toolsUrl: env.AI_TOOLS_URL,

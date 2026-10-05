@@ -19,6 +19,7 @@ import { LunaToolService } from './luna/tools';
 import { SerpApiSearchService } from './luna/search';
 import { getRolivWeather, isWeatherRequest } from './weather';
 import { LunaStateService } from './luna/state';
+import { TencentMemoryService } from './luna/tencent-memory';
 
 const LUNA_WELCOME_IMAGE_URL = 'https://raw.githubusercontent.com/vakdab/lunalikbot/main/luna-welcome.png';
 const LUNA_WELCOME_CAPTION = `Привіт. Я Луна.
@@ -62,6 +63,13 @@ export default {
       const telegram = new TelegramApi(config.telegramToken);
       const kvStorage = new KVStorage(env.LUNA_KV);
       const state = new LunaStateService(kvStorage);
+      const tencentMemory = new TencentMemoryService({
+        endpoint: config.tencentMemoryEndpoint,
+        apiKey: config.tencentMemoryApiKey,
+        serviceId: config.tencentMemoryServiceId,
+        teamId: config.tencentMemoryTeamId,
+        agentId: config.tencentMemoryAgentId,
+      });
       const proactive = new ProactiveService(kvStorage, telegram, state);
       const reminders = new ReminderService(kvStorage, telegram);
       const groups = new GroupService(telegram);
@@ -82,7 +90,7 @@ export default {
         googleDomain: config.searchGoogleDomain,
       });
       const aiProvider = AIProviderFactory.create(config);
-      const luna = new LunaCompanion(telegram, userRepo, memory, history, state, tools, search, aiProvider);
+      const luna = new LunaCompanion(telegram, userRepo, memory, history, state, tencentMemory, tools, search, aiProvider);
       const update: TelegramUpdate = await request.json();
       const message = update.message;
 
@@ -112,6 +120,7 @@ export default {
         if (/^\/memory_clear(?:@\w+)?$/i.test(command)) {
           await state.clearMemories(message.from.id);
           await memory.saver.clearUserMemories(message.from.id);
+          await tencentMemory.clearSession(message.from.id, message.chat.id);
           await telegram.sendMessage(message.chat.id, 'Готово. Довготривалу памʼять про тебе очищено.');
           return new Response('OK');
         }
