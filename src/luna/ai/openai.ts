@@ -3,6 +3,12 @@ import { Logger } from '../../utils/logger';
 import { LunaEmotion } from '../../media/types';
 import { AIProvider, AIResponse, ChatMessage, GenerateOptions } from './types';
 
+// Ліміти, щоб запит вкладався в TPM Groq (8000 токенів/хв на безкоштовному тарифі).
+const MAX_COMPLETION_TOKENS_CAP = 600;
+const MAX_HISTORY_MESSAGES = 12;
+const MAX_RETRY_WAIT_MS = 20000;
+const DEFAULT_RETRY_WAIT_MS = 5000;
+
 export class OpenAIProvider implements AIProvider {
   public readonly providerName: string;
   public readonly modelName: string;
@@ -51,6 +57,22 @@ export class OpenAIProvider implements AIProvider {
     return { cleanText: workingText, innerThought, emotion };
   }
 
+  // Повертає затримку в мс перед повтором після 429 або null, якщо чекати занадто довго.
+  private getRetryDelayMs(res: Response, bodyText: string): number | null {
+    let seconds: number | null = null;
+
+    const header = res.headers.get('retry-after');
+    if (header && !Number.isNaN(parseFloat(header))) {
+      seconds = parseFloat(header);
+    } else {
+      const match = bodyText.match(/try again in\s+([\d.]+)\s*s/i);
+      if (match) seconds = parseFloat(match[1]);
+    }
+
+    const ms = seconds !== null ? Math.ceil(seconds * 1000) + 300 : DEFAULT_RETRY_WAIT_MS;
+    return ms <= MAX_RETRY_WAIT_MS ? ms : null;
+  }
+
   async generateResponse(messages: ChatMessage[], options?: GenerateOptions): Promise<AIResponse> {
     const url = `${this.baseUrl}/chat/completions`;
     const formattedMessages: any[] = [];
@@ -62,22 +84,31 @@ export class OpenAIProvider implements AIProvider {
       });
     }
 
-    formattedMessages.push(...messages);
+    formattedMessages.push(...messages.slice(-MAX_HISTORY_MESSAGES));
+
+    const maxTokens = Math.min(options?.maxTokens ?? MAX_COMPLETION_TOKENS_CAP, MAX_COMPLETION_TOKENS_CAP);
 
     try {
-      const makeRequest = (model: string) => fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
+      const makeRequest = (model: string) => {
+        const body: Record<string, unknown> = {
           model,
           messages: formattedMessages,
           temperature: options?.temperature ?? 0.8,
-          max_tokens: options?.maxTokens ?? 900,
-        }),
-      });
+          max_tokens: maxTokens,
+        };
+        // gpt-oss міркує і витрачає на це токени; low економить квоту.
+        if (model.includes('gpt-oss')) {
+          body.reasoning_effort = 'low';
+        }
+        return fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`,
+          },
+          body: JSON.stringify(body),
+        });
+      };
       let activeModel = this.modelName;
       let res = await makeRequest(activeModel);
 
@@ -91,6 +122,20 @@ export class OpenAIProvider implements AIProvider {
             res = fallbackResponse;
             break;
           }
+        }
+      }
+
+      // Один повтор після короткої паузи, якщо впёрлися в rate limit.
+      if (res.status === 429) {
+        const bodyText = await res.clone().text();
+        const waitMs = this.getRetryDelayMs(res, bodyText);
+        if (waitMs !== null) {
+          Logger.error(
+            `AI API 429 for ${this.providerName}/${activeModel}, retry in ${waitMs}ms`,
+            new Error(bodyText.slice(0, 240))
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          res = await makeRequest(activeModel);
         }
       }
 
